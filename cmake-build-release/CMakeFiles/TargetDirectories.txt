@@ -1,3 +1,0 @@
-/home/jop/Downloads/CheatTurbine/cmake-build-release/CMakeFiles/CheatTurbine.dir
-/home/jop/Downloads/CheatTurbine/cmake-build-release/CMakeFiles/edit_cache.dir
-/home/jop/Downloads/CheatTurbine/cmake-build-release/CMakeFiles/rebuild_cache.dir
