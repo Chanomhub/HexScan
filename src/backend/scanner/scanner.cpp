@@ -255,6 +255,10 @@ void Scanner::nextScan(const std::function<bool(void*)> cmp) {
 
         Gui::log("{}: Scanning region {} - {}", name, start, end);
 
+        // Bounds check before accessing addresses
+        if (scannedAddresses >= addresses.size())
+            break;
+            
         if (addresses[scannedAddresses] < start)
             continue;
 
