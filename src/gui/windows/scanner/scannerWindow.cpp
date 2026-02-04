@@ -295,11 +295,9 @@ void ScannerWindow::scanResults() {
 
 
 void ScannerWindow::draw() {
-    if (!ImGui::Begin(name.c_str(), &pOpen))
-        return;
-
-    scanControls();
-    scanResults();
-
+    if (ImGui::Begin(name.c_str(), &pOpen)) {
+        scanControls();
+        scanResults();
+    }
     ImGui::End();
 }
