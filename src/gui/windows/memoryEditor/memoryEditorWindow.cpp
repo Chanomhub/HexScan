@@ -118,7 +118,8 @@ void MemoryEditorWindow::draw() {
                     else if (cellHighlightTimeLeft[row * valuesPerRow + i] < 0)
                         cellHighlightTimeLeft[row * valuesPerRow + i] = 0;
                     ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(15, 135, 250, cellHighlightTimeLeft[row * valuesPerRow + i]));
-                    if (ImGui::InputScalar("", ImGuiCellValueType, currentValue, nullptr, nullptr, fmtStr.c_str(), (displayAsHex ? ImGuiInputTextFlags_CharsHexadecimal : 0) | ImGuiInputTextFlags_EnterReturnsTrue)) {
+                    ImGui::InputScalar("", ImGuiCellValueType, currentValue, nullptr, nullptr, fmtStr.c_str(), (displayAsHex ? ImGuiInputTextFlags_CharsHexadecimal : 0));
+                    if (ImGui::IsItemDeactivatedAfterEdit()) {
                         if (VirtualMemory::write(currentValue, (void*)currentAddress, sizeofValue))
                             Gui::log("Wrote {} to {:p}", cellValueType.format(currentValue, displayAsHex), (void*)currentAddress);
                     }
