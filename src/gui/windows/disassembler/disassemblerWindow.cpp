@@ -2,6 +2,7 @@
 #include "../../../backend/virtualMemory/virtualMemory.h"
 #include "../../../backend/selectedProcess/selectedProcess.h"
 #include "../../../backend/patch/patchManager.h"
+#include "../../../backend/debugger/accessTracker.h"
 #include "../../gui.h"
 
 #include <imgui.h>
@@ -154,6 +155,39 @@ void DisassemblerWindow::drawTable() {
             // Operands
             ImGui::TableNextColumn();
             ImGui::Text("%s", line.operands.c_str());
+
+            // Context Menu
+            if (ImGui::BeginPopupContextItem(std::to_string(line.address).c_str())) {
+                if (ImGui::MenuItem("Copy Address")) {
+                    ImGui::SetClipboardText(std::format("{:x}", line.address).c_str());
+                }
+                if (ImGui::MenuItem("Copy Bytes")) {
+                    ImGui::SetClipboardText(line.bytes.c_str());
+                }
+                
+                bool isPatched = PatchManager::isPatched((void*)line.address);
+                if (isPatched) {
+                    if (ImGui::MenuItem("Restore Original Code")) {
+                        PatchManager::restorePatch((void*)line.address);
+                    }
+                } else {
+                    if (ImGui::MenuItem("NOP Instruction")) {
+                        if (AccessTracker::isTracking()) {
+                            AccessTracker::stopTracking();
+                            Gui::log("Access Tracker stopped for safe patching.");
+                        }
+                        PatchManager::nopInstruction((void*)line.address, line.length, line.fullText);
+                        refreshInstructions();
+                    }
+                }
+                ImGui::EndPopup();
+            }
+            // Allow right-click anywhere on the row to open context menu
+            // We need to use specific ID for the popup to work on row
+            // But we can't easily span row with one item. 
+            // Instead, we attach popup to the last column or try to attach to row.
+            // Actually, attaching to specific columns is easier. Let's make sure it works.
+            // The simplest way is to repeat the popup logic or use OpenPopupOnItemClick with a specific ID.
         }
         
         ImGui::EndTable();
