@@ -167,6 +167,13 @@ void AccessTrackerWindow::drawResults() {
             
             ImGui::SameLine();
             
+            if (ImGui::Button("Disasm")) {
+                Gui::showDisassembler((uint64_t)record.instructionAddress);
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show in Disassembler");
+
+            ImGui::SameLine();
+            
             if (ImGui::Button("Copy AOB")) {
                 ImGui::SetClipboardText(AccessTracker::getAOBString(record).c_str());
                 Gui::log("Copied AOB to clipboard");

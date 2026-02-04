@@ -97,6 +97,7 @@ add_executable(HexScan src/main.cpp
         src/backend/debugger/accessTracker.cpp
         src/gui/windows/accessTracker/accessTrackerWindow.cpp
         src/backend/disassembler/disassembler.cpp
+        src/gui/windows/disassembler/disassemblerWindow.cpp
         src/backend/patch/patchManager.cpp
 )
 

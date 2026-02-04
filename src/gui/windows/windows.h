@@ -17,5 +17,6 @@
 #include "pchainEditor/pchainEditorWindow.h"
 #include "structureDissector/structureDissectorWindow.h"
 #include "accessTracker/accessTrackerWindow.h"
+#include "disassembler/disassemblerWindow.h"
 
 #endif //HEX_SCAN_WINDOWS_H

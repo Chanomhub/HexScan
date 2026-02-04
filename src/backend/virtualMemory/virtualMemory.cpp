@@ -3,13 +3,16 @@
 
 #include <cstdio>
 #include <sys/uio.h>
+#include <sys/ptrace.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include <cstring>
 #include <string>
+#include <algorithm>
 
 #include "../../gui/gui.h"
+#include "../debugger/accessTracker.h"
 
 // Helper to open /proc/pid/mem
 static int openMemFd(pid_t pid, int flags) {
@@ -54,4 +57,49 @@ bool VirtualMemory::write(void* from, void* to, const unsigned long long length)
     close(fd);
 
     return nwrote == static_cast<ssize_t>(length);
+}
+
+bool VirtualMemory::writeCode(void* from, void* to, const unsigned long long length) {
+    if (SelectedProcess::pid == -1) return false;
+    
+    // If AccessTracker is attached, we MUST write through the tracker thread
+    if (AccessTracker::isAttached()) {
+        return AccessTracker::writeMemory(to, from, length);
+    }
+    
+    pid_t pid = SelectedProcess::pid;
+    uint8_t* src = static_cast<uint8_t*>(from);
+    uint8_t* dst = static_cast<uint8_t*>(to);
+    
+    // PTRACE_POKETEXT writes one word (8 bytes on x64) at a time
+    // and can write to read-only memory regions
+    
+    for (unsigned long long offset = 0; offset < length; offset += sizeof(long)) {
+        long word = 0;
+        size_t remaining = length - offset;
+        size_t chunk = std::min(remaining, sizeof(long));
+        
+        // If we're not writing a full word, we need to read first to preserve other bytes
+        if (chunk < sizeof(long)) {
+            errno = 0;
+            word = ptrace(PTRACE_PEEKTEXT, pid, dst + offset, nullptr);
+            if (errno != 0) {
+                Gui::log("VirtualMemory::writeCode: PEEKTEXT failed at {:p}: {}", 
+                         static_cast<void*>(dst + offset), strerror(errno));
+                return false;
+            }
+        }
+        
+        // Copy the source bytes into the word
+        std::memcpy(&word, src + offset, chunk);
+        
+        // Write the word
+        if (ptrace(PTRACE_POKETEXT, pid, dst + offset, word) == -1) {
+            Gui::log("VirtualMemory::writeCode: POKETEXT failed at {:p}: {}", 
+                     static_cast<void*>(dst + offset), strerror(errno));
+            return false;
+        }
+    }
+    
+    return true;
 }

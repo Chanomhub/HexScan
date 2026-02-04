@@ -29,6 +29,9 @@ namespace Gui {
     }
 
     void addWindow(Window* window);
+    // Open a disassembler window at the specified address
+    void showDisassembler(uint64_t address = 0);
+
     template <typename T>
     std::list<T*> getWindows() {
         std::list<T*> res;

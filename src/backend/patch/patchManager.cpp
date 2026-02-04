@@ -30,8 +30,8 @@ namespace PatchManager {
         // Create NOP bytes
         patch.patchedBytes = Disassembler::createNOP(length);
 
-        // Apply patch
-        if (VirtualMemory::write(patch.patchedBytes.data(), address, length)) {
+        // Apply patch using writeCode (PTRACE_POKETEXT) for executable memory
+        if (VirtualMemory::writeCode(patch.patchedBytes.data(), address, length)) {
             patch.isActive = true;
             patches[address] = patch;
             Gui::log("PatchManager: Applied NOP patch at {:p}", address);
@@ -49,7 +49,7 @@ namespace PatchManager {
         Patch& patch = it->second;
         if (!patch.isActive) return true; // Already restored
 
-        if (VirtualMemory::write(patch.originalBytes.data(), address, patch.originalBytes.size())) {
+        if (VirtualMemory::writeCode(patch.originalBytes.data(), address, patch.originalBytes.size())) {
             patch.isActive = false;
             Gui::log("PatchManager: Restored original bytes at {:p}", address);
             return true;

@@ -37,6 +37,11 @@ namespace AccessTracker {
     
     // Get the address being tracked
     void* getTrackedAddress();
+    
+    // Write memory through the tracker thread (uses PTRACE_POKETEXT)
+    // This is needed because only the thread that called PTRACE_ATTACH can use PTRACE_POKE*
+    // Returns true if the write was successful
+    bool writeMemory(void* address, const void* data, size_t length);
 }
 
 #endif //HEX_SCAN_ACCESSTRACKER_H

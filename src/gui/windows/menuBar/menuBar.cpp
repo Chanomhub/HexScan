@@ -66,6 +66,8 @@ void MenuBarWindow::draw() {
                     Gui::addWindow(new PointerMapManagerWindow());
                 if (ImGui::MenuItem("Structure dissector"))
                     Gui::addWindow(new StructureDissectorWindow());
+                if (ImGui::MenuItem("Disassembler"))
+                    Gui::addWindow(new DisassemblerWindow());
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();

@@ -66,3 +66,23 @@ void Gui::addWindow(Window* window) {
     // std::cout << "Opened " << window->name << std::endl;
     windows.emplace_back(window);
 }
+
+void Gui::showDisassembler(uint64_t address) {
+    // Check if a Disassembler window is already open
+    auto disassemblers = getWindows<DisassemblerWindow>();
+    if (!disassemblers.empty()) {
+        // Use the first one
+        DisassemblerWindow* win = disassemblers.front();
+        if (!win->pOpen) {
+            win->pOpen = true; // Re-open if closed but not destroyed (shouldn't happen with current logic but safe)
+        }
+        ImGui::SetWindowFocus(win->name.c_str());
+        if (address != 0) {
+            win->goToAddress(address);
+        }
+    } else {
+        // Create new one
+        auto win = new DisassemblerWindow(address);
+        addWindow(win);
+    }
+}

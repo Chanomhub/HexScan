@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <cerrno>
 #include <cstring>
+#include <condition_variable>
 
 namespace {
     std::atomic<bool> tracking{false};
@@ -24,6 +25,22 @@ namespace {
     std::map<void*, AccessRecord> recordsMap;
     
     constexpr int INSTRUCTION_BYTES_TO_CAPTURE = 16;
+    
+    // Pending write request for cross-thread memory writes
+    struct WriteRequest {
+        void* address;
+        std::vector<uint8_t> data;
+        bool pending;
+        bool success;
+    };
+    
+    std::mutex writeMutex;
+    std::condition_variable writeCV;
+    std::condition_variable writeCompleteCV;
+    WriteRequest pendingWrite{nullptr, {}, false, false};
+    
+    // Store the attached PID so we can use it from the tracker thread
+    std::atomic<pid_t> attachedPid{-1};
     
     // Set hardware breakpoint directly (inline, no detach)
     bool setHwBreakpointDirect(pid_t pid, void* address, BreakpointType type) {
@@ -74,6 +91,55 @@ namespace {
         ptrace(PTRACE_POKEUSER, pid, DR_OFFSET + 6 * sizeof(long), 0);
     }
     
+    // Process any pending write requests
+    void processPendingWrites(pid_t pid) {
+        std::unique_lock<std::mutex> lock(writeMutex);
+        if (pendingWrite.pending) {
+            // Execute write
+            uint8_t* dst = static_cast<uint8_t*>(pendingWrite.address);
+            size_t length = pendingWrite.data.size();
+            const uint8_t* src = pendingWrite.data.data();
+            
+            fprintf(stderr, "AccessTracker: Writing %zu bytes to %p\n", length, dst);
+            
+            bool success = true;
+            for (size_t offset = 0; offset < length; offset += sizeof(long)) {
+                long word = 0;
+                size_t remaining = length - offset;
+                size_t chunk = std::min(remaining, sizeof(long));
+                
+                // Read-modify-write for partial words
+                if (chunk < sizeof(long)) {
+                    errno = 0;
+                    word = ptrace(PTRACE_PEEKTEXT, pid, dst + offset, nullptr);
+                    if (errno != 0) {
+                        fprintf(stderr, "AccessTracker: PEEKTEXT failed at %p: %s\n", 
+                                static_cast<void*>(dst + offset), strerror(errno));
+                        success = false; 
+                        break;
+                    }
+                }
+                
+                std::memcpy(&word, src + offset, chunk);
+                
+                if (ptrace(PTRACE_POKETEXT, pid, dst + offset, word) == -1) {
+                    fprintf(stderr, "AccessTracker: POKETEXT failed at %p: %s\n", 
+                            static_cast<void*>(dst + offset), strerror(errno));
+                    success = false;
+                    break;
+                }
+            }
+            
+            if (success) {
+                 fprintf(stderr, "AccessTracker: Write successful\n");
+            }
+            
+            pendingWrite.success = success;
+            pendingWrite.pending = false;
+            writeCompleteCV.notify_all();
+        }
+    }
+    
     void trackerLoop() {
         fprintf(stderr, "DEBUG: trackerLoop started (fprintf)\n"); // Raw fprintf to bypass C++ streams
         pid_t pid = SelectedProcess::pid;
@@ -97,6 +163,7 @@ namespace {
             return;
         }
         
+        
         fprintf(stderr, "DEBUG: Waiting for initial stop\n");
         // Wait for initial stop
         int status;
@@ -107,6 +174,9 @@ namespace {
             tracking = false;
             return;
         }
+        
+        attachedPid = pid;
+
         
         fprintf(stderr, "DEBUG: Setting HW breakpoint\n");
         // Set hardware breakpoint NOW (while attached)
@@ -125,8 +195,8 @@ namespace {
         while (!shouldStop.load()) {
             // Continue the process
             if (ptrace(PTRACE_CONT, pid, nullptr, nullptr) == -1) {
-                fprintf(stderr, "AccessTracker: PTRACE_CONT failed\n");
-                // Gui::log("AccessTracker: PTRACE_CONT failed");
+                fprintf(stderr, "AccessTracker: PTRACE_CONT failed: %s (%d)\n", strerror(errno), errno);
+                Gui::log("AccessTracker: PTRACE_CONT failed: {} ({})", strerror(errno), errno);
                 break;
             }
             
@@ -146,6 +216,9 @@ namespace {
                 int sig = WSTOPSIG(status);
                 
                 if (sig == SIGTRAP) {
+                    // Check for pending writes first!
+                    processPendingWrites(pid);
+                    
                     // Hardware breakpoint hit!
                     struct user_regs_struct regs;
                     if (ptrace(PTRACE_GETREGS, pid, nullptr, &regs) == 0) {
@@ -192,6 +265,9 @@ namespace {
                     clearDR6(pid);
                     
                 } else if (sig == SIGSTOP) {
+                    // Check for pending writes
+                    processPendingWrites(pid);
+                    
                     // We might have sent this to stop tracking
                     if (shouldStop.load()) {
                         break;
@@ -219,6 +295,7 @@ namespace {
         ptrace(PTRACE_POKEUSER, pid, DR_OFFSET + 7 * sizeof(long), dr7);
         
         // Detach from process
+        attachedPid = -1;
         ptrace(PTRACE_DETACH, pid, nullptr, nullptr);
         
         tracking = false;
@@ -330,4 +407,25 @@ std::string AccessTracker::getAOBString(const AccessRecord& record) {
 
 void* AccessTracker::getTrackedAddress() {
     return trackedAddress;
+}
+
+bool AccessTracker::writeMemory(void* address, const void* data, size_t length) {
+    pid_t pid = attachedPid.load();
+    if (pid == -1) return false;
+    
+    std::unique_lock<std::mutex> lock(writeMutex);
+    
+    pendingWrite.address = address;
+    pendingWrite.data.resize(length);
+    std::memcpy(pendingWrite.data.data(), data, length);
+    pendingWrite.pending = true;
+    pendingWrite.success = false;
+    
+    // Wake up the tracker thread by stopping the process
+    kill(pid, SIGSTOP);
+    
+    // Wait for completion
+    writeCompleteCV.wait(lock, []{ return !pendingWrite.pending; });
+    
+    return pendingWrite.success;
 }
