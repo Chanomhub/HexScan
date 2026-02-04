@@ -217,9 +217,11 @@ void ScannerWindow::scanResults() {
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
         ImGuiListClipper clipper;
-        clipper.Begin(scanner.totalAddresses);
+        // Use addresses.size() to avoid out of bounds access
+        const int displayCount = static_cast<int>(scanner.addresses.size());
+        clipper.Begin(displayCount);
         while (clipper.Step()) {
-            for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+            for (int row = clipper.DisplayStart; row < clipper.DisplayEnd && row < displayCount; row++) {
                 ImGui::TableNextRow();
                 ImGui::PushID(row);
                 ImGui::TableNextColumn();
