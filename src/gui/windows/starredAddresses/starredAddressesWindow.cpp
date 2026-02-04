@@ -6,6 +6,7 @@
 #include "../../gui.h"
 #include "../../windows/windows.h"
 #include "../../../backend/virtualMemory/virtualMemory.h"
+#include "../accessTracker/accessTrackerWindow.h"
 
 #include <imgui_stdlib.h>
 #include <string>
@@ -221,6 +222,36 @@ void StarredAddressesWindow::draw() {
                     if (ImGui::Selectable("Open in structure dissector")) {
                         Gui::windows.emplace_back(new StructureDissectorWindow(addresses[row].address));
                     }
+                    
+                    ImGui::Separator();
+                    
+                    if (ImGui::Selectable("Find what accesses this address")) {
+                        // Create or get existing AccessTrackerWindow
+                        auto windows = Gui::getWindows<AccessTrackerWindow>();
+                        AccessTrackerWindow* atWindow;
+                        if (windows.empty()) {
+                            atWindow = new AccessTrackerWindow();
+                            Gui::addWindow(atWindow);
+                        } else {
+                            atWindow = windows.front();
+                        }
+                        atWindow->startWatch(addresses[row].address, BreakpointType::DataReadWrite);
+                    }
+                    
+                    if (ImGui::Selectable("Find what writes to this address")) {
+                        auto windows = Gui::getWindows<AccessTrackerWindow>();
+                        AccessTrackerWindow* atWindow;
+                        if (windows.empty()) {
+                            atWindow = new AccessTrackerWindow();
+                            Gui::addWindow(atWindow);
+                        } else {
+                            atWindow = windows.front();
+                        }
+                        atWindow->startWatch(addresses[row].address, BreakpointType::DataWrite);
+                    }
+                    
+                    ImGui::Separator();
+                    
                     if (ImGui::Selectable("Remove from starred")) {
                         addressesMarkedForDeletion.push_back(row);
                     }

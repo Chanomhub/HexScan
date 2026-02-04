@@ -16,5 +16,6 @@
 #include "pointerMapManager/pointerMapManagerWindow.h"
 #include "pchainEditor/pchainEditorWindow.h"
 #include "structureDissector/structureDissectorWindow.h"
+#include "accessTracker/accessTrackerWindow.h"
 
 #endif //HEX_SCAN_WINDOWS_H

@@ -91,6 +91,9 @@ add_executable(HexScan src/main.cpp
         src/gui/windows/pchainEditor/pchainEditorWindow.cpp
         src/gui/windows/structureDissector/structureDissectorWindow.cpp
         src/backend/CTvalue/CTvalue.cpp
+        src/backend/debugger/hwBreakpoint.cpp
+        src/backend/debugger/accessTracker.cpp
+        src/gui/windows/accessTracker/accessTrackerWindow.cpp
 )
 
 target_link_libraries(HexScan PRIVATE Vulkan::Vulkan imgui::imgui glfw fontconfig)
