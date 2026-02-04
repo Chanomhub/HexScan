@@ -1,6 +1,7 @@
 #include "scannerWindow.h"
 #include "../../widgets/widgets.h"
 #include "../../../backend/virtualMemory/virtualMemory.h"
+#include "../../../backend/scanner/aobUtils.h"
 #include "../../gui.h"
 #include "../memoryEditor/memoryEditorWindow.h"
 #include "../starredAddresses/starredAddressesWindow.h"
@@ -27,6 +28,10 @@ void ScannerWindow::scanControls() {
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 4 - ImGui::GetStyle().FramePadding.x);
         Widgets::valueInputTrueOnEditing(scanner.valueType, scanner.valueBytesSecond.data());
+    } else if (scanner.valueType.type == byteArray) {
+        // AOB uses text input for hex pattern
+        ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 2);
+        ImGui::InputTextWithHint("##AOBInput", "48 8B ?? 00 AA", aobInputBuffer, sizeof(aobInputBuffer));
     } else {
         ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 2);
         Widgets::valueInputTrueOnEditing(scanner.valueType, scanner.valueBytes.data(), 256);
@@ -35,8 +40,24 @@ void ScannerWindow::scanControls() {
         ImGui::EndDisabled();
 
     if (scanner.isReset) {
-        if (ImGui::Button("New"))
-            scanner.newScan();
+        if (ImGui::Button("New")) {
+            // Handle AOB parsing before scan
+            if (scanner.valueType.type == byteArray) {
+                auto parseResult = ParseAOBString(aobInputBuffer);
+                if (parseResult.success) {
+                    scanner.valueBytes = parseResult.bytes;
+                    scanner.valueMask = parseResult.mask;
+                    scanner.valueType.stringLength = parseResult.bytes.size();
+                    scanner.fastScanOffset = 1;  // Force byte-aligned scanning for AOB
+                    scanner.scanType = equal;    // AOB only supports equal
+                    scanner.newScan();
+                } else {
+                    Gui::log("AOB Parse Error: {}", parseResult.errorMessage);
+                }
+            } else {
+                scanner.newScan();
+            }
+        }
     } else {
         if (ImGui::Button("Reset"))
             scanner.reset();
@@ -91,6 +112,14 @@ void ScannerWindow::scanControls() {
             }
             if (ImGui::Combo("##My Combo", &currentItem, items, IM_ARRAYSIZE(items)))
                 scanner.scanType = indexMapping[currentItem];
+        } else if (scanner.valueType.type == byteArray) {
+            // AOB only supports Equal scan type
+            scanner.scanType = equal;
+            ImGui::BeginDisabled();
+            int dummy = 0;
+            const char* items[]{"Equal"};
+            ImGui::Combo("##AOB Scan Type", &dummy, items, 1);
+            ImGui::EndDisabled();
         } else {
             constexpr std::array indexMapping{equal, bigger, smaller, range, unknown};
             const char* items[]{"Equal", "Bigger than", "Smaller than", "Range", "Unknown"};
@@ -106,7 +135,14 @@ void ScannerWindow::scanControls() {
             scanner.scanType = equal;
         if (scanner.valueType.type == string)
             ImGui::Combo("##scanner_scan_type", (int*)&scanner.scanType, "Equal\0Changed\0Unchanged\0\0");
-        else
+        else if (scanner.valueType.type == byteArray) {
+            // AOB only supports Equal
+            scanner.scanType = equal;
+            ImGui::BeginDisabled();
+            int dummy = 0;
+            ImGui::Combo("##scanner_scan_type", &dummy, "Equal\0\0");
+            ImGui::EndDisabled();
+        } else
             ImGui::Combo("##scanner_scan_type", (int*)&scanner.scanType, "Equal\0Bigger than\0Smaller than\0Range\0Increased\0Increased by\0Decreased\0Decreased by\0Changed\0Unchanged\0\0");
     }
 

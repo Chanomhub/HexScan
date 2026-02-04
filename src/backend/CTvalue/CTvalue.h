@@ -14,6 +14,7 @@ enum CTValueType : uint8_t {
     f64,
     f32,
     string,
+    byteArray,
 };
 
 

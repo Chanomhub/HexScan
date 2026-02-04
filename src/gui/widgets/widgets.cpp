@@ -34,7 +34,7 @@ void Widgets::valueText(const CTvalue& valueType, void* value) {
 }
 
 void Widgets::valueTypeSelector(CTvalue& valueType, const bool enablePchain) {
-    const std::array<std::string, 9> items{"pchain", "signed?", "int64", "int32", "int16", "int8", "float64", "float32", "string"};
+    const std::array<std::string, 10> items{"pchain", "signed?", "int64", "int32", "int16", "int8", "float64", "float32", "string", "AOB"};
     unsigned currentItem = valueType.type + 2;
     std::string previewString = (valueType.flags & isSigned or currentItem > 5 ? "" : "u") + items[currentItem];
     if (valueType.flags & pchain)

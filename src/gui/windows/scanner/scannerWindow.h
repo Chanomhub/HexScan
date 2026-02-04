@@ -7,6 +7,7 @@
 
 class ScannerWindow final : public Window {
     Scanner scanner{name.c_str()};
+    char aobInputBuffer[512] = "";  // Buffer for AOB hex string input
 
     void scanControls();
 

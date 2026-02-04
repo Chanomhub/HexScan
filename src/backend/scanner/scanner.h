@@ -30,6 +30,8 @@ class Scanner {
 
     std::function<bool(void*)> getStringComparator();
 
+    std::function<bool(void*)> getAOBComparator();
+
     std::function<bool(void*)> getTypeSpecificComparator();
 
     void newScan(std::function<bool(void*)> cmp);
@@ -40,6 +42,7 @@ public:
     Regions regions;
     std::vector<uint8_t> valueBytes;
     std::vector<uint8_t> valueBytesSecond;
+    std::vector<uint8_t> valueMask;  // 0xFF = compare, 0x00 = wildcard
 
     std::vector<void*> addresses;
     void* latestValues;

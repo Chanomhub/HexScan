@@ -11,7 +11,7 @@ CTvalue::CTvalue(const CTValueType type, const CTValueFlags flags, const unsigne
 
 unsigned CTvalue::getSize() const {
     static constexpr std::array<int, 6> sizes{8, 4, 2, 1, 8, 4};
-    if (type == string)
+    if (type == string || type == byteArray)
         return stringLength;
     return sizes[type];
 }
@@ -57,6 +57,16 @@ std::string CTvalue::format(void* mem, const bool hex) const {
         case string:
             snprintf(buf, 128, fmt, (char*)mem);
             break;
+        case byteArray: {
+            std::string result;
+            for (unsigned i = 0; i < stringLength; ++i) {
+                if (i > 0) result += " ";
+                char hexByte[4];
+                snprintf(hexByte, 4, "%02X", ((uint8_t*)mem)[i]);
+                result += hexByte;
+            }
+            return result;
+        }
     }
 
     return buf;
@@ -68,7 +78,7 @@ std::string CTvalue::getFmtStr(const bool hex) const {
     static constexpr std::array<char[3], 8> fmts{"ll", "l", "h", "hh", "", "", "s"};
 
     strcpy(&fmt[1], fmts[type]);
-    if (type != string) {
+    if (type != string && type != byteArray) {
         if (hex)
             strcat(fmt, (type == f32 or type == f64) ? "a" : "x");
         else

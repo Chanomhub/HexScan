@@ -1,4 +1,5 @@
 #include "scanner.h"
+#include "aobUtils.h"
 
 #include <cmath>
 
@@ -10,7 +11,6 @@
 #include <thread>
 #include <functional>
 #include <utility>
-
 
 Scanner::Scanner(const char* name) {
     this->name = name;
@@ -110,6 +110,25 @@ std::function<bool(void*)> Scanner::getStringComparator() {
 }
 
 
+std::function<bool(void*)> Scanner::getAOBComparator() {
+    // AOB only supports "equal" scan type
+    const size_t patternSize = valueBytes.size();
+    
+    return [this, patternSize](void* mem) {
+        const uint8_t* memPtr = static_cast<const uint8_t*>(mem);
+        const uint8_t* patternPtr = valueBytes.data();
+        const uint8_t* maskPtr = valueMask.data();
+        
+        for (size_t i = 0; i < patternSize; ++i) {
+            if ((memPtr[i] & maskPtr[i]) != (patternPtr[i] & maskPtr[i])) {
+                return false;
+            }
+        }
+        return true;
+    };
+}
+
+
 std::function<bool(void*)> Scanner::getTypeSpecificComparator() {
     switch (valueType.type) {
         case i64:
@@ -134,6 +153,8 @@ std::function<bool(void*)> Scanner::getTypeSpecificComparator() {
             return getCommonComparator<float_t>();
         case string:
             return getStringComparator();
+        case byteArray:
+            return getAOBComparator();
     }
 
     std::unreachable();
@@ -270,6 +291,7 @@ void Scanner::reset() {
     valueBytesSecond = std::vector<uint8_t>(32);
     valueBytes.clear();
     valueBytesSecond.clear();
+    valueMask.clear();
     latestValues = realloc(latestValues, 65535);
     latestValuesSize = 65535;
     addresses = std::vector<void*>();
