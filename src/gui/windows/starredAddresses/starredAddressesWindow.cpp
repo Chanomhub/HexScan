@@ -226,16 +226,21 @@ void StarredAddressesWindow::draw() {
                     ImGui::Separator();
                     
                     if (ImGui::Selectable("Find what accesses this address")) {
+                        Gui::log("Debug: Opening AccessTrackerWindow...");
                         // Create or get existing AccessTrackerWindow
                         auto windows = Gui::getWindows<AccessTrackerWindow>();
                         AccessTrackerWindow* atWindow;
                         if (windows.empty()) {
+                            Gui::log("Debug: Creating new AccessTrackerWindow");
                             atWindow = new AccessTrackerWindow();
                             Gui::addWindow(atWindow);
                         } else {
+                            Gui::log("Debug: Using existing AccessTrackerWindow");
                             atWindow = windows.front();
                         }
+                        Gui::log("Debug: Calling startWatch on {:p}", addresses[row].address);
                         atWindow->startWatch(addresses[row].address, BreakpointType::DataReadWrite);
+                        Gui::log("Debug: startWatch returned");
                     }
                     
                     if (ImGui::Selectable("Find what writes to this address")) {

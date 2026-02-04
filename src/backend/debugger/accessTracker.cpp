@@ -31,7 +31,8 @@ namespace {
         
         // Set address in DR0
         if (ptrace(PTRACE_POKEUSER, pid, DR_OFFSET, address) == -1) {
-            Gui::log("AccessTracker: Failed to set DR0: {}", strerror(errno));
+            fprintf(stderr, "AccessTracker: Failed to set DR0: %s\n", strerror(errno));
+            // Gui::log("AccessTracker: Failed to set DR0: {}", strerror(errno));
             return false;
         }
         
@@ -39,7 +40,8 @@ namespace {
         errno = 0;
         long dr7 = ptrace(PTRACE_PEEKUSER, pid, DR_OFFSET + 7 * sizeof(long), nullptr);
         if (errno != 0) {
-            Gui::log("AccessTracker: Failed to read DR7: {}", strerror(errno));
+            fprintf(stderr, "AccessTracker: Failed to read DR7: %s\n", strerror(errno));
+            // Gui::log("AccessTracker: Failed to read DR7: {}", strerror(errno));
             return false;
         }
         
@@ -56,11 +58,13 @@ namespace {
         
         // Write DR7
         if (ptrace(PTRACE_POKEUSER, pid, DR_OFFSET + 7 * sizeof(long), dr7) == -1) {
-            Gui::log("AccessTracker: Failed to write DR7: {}", strerror(errno));
+            fprintf(stderr, "AccessTracker: Failed to write DR7: %s\n", strerror(errno));
+            // Gui::log("AccessTracker: Failed to write DR7: {}", strerror(errno));
             return false;
         }
         
-        Gui::log("AccessTracker: Hardware breakpoint set at {:p}", address);
+        fprintf(stderr, "AccessTracker: Hardware breakpoint set at %p\n", address);
+        // Gui::log("AccessTracker: Hardware breakpoint set at {:p}", address);
         return true;
     }
     
@@ -71,46 +75,58 @@ namespace {
     }
     
     void trackerLoop() {
+        fprintf(stderr, "DEBUG: trackerLoop started (fprintf)\n"); // Raw fprintf to bypass C++ streams
         pid_t pid = SelectedProcess::pid;
+        fprintf(stderr, "DEBUG: Got PID: %d\n", pid);
+
         if (pid == detached) {
-            Gui::log("AccessTracker: No process attached");
+            fprintf(stderr, "DEBUG: trackerLoop: No process attached\n");
+            // Gui::log("AccessTracker: No process attached");
             tracking = false;
             return;
         }
         
-        Gui::log("AccessTracker: Starting trace on PID {}", pid);
+        // Gui::log("AccessTracker: Starting trace on PID {}", pid);
+        fprintf(stderr, "DEBUG: Attaching to PID %d\n", pid);
         
         // Attach to process
         if (ptrace(PTRACE_ATTACH, pid, nullptr, nullptr) == -1) {
-            Gui::log("AccessTracker: Failed to attach: {}", strerror(errno));
+            fprintf(stderr, "DEBUG: Failed to attach: %s\n", strerror(errno));
+            // Gui::log("AccessTracker: Failed to attach: {}", strerror(errno));
             tracking = false;
             return;
         }
         
+        fprintf(stderr, "DEBUG: Waiting for initial stop\n");
         // Wait for initial stop
         int status;
         if (waitpid(pid, &status, 0) == -1) {
-            Gui::log("AccessTracker: waitpid failed");
+            fprintf(stderr, "DEBUG: waitpid failed: %s\n", strerror(errno));
+            // Gui::log("AccessTracker: waitpid failed");
             ptrace(PTRACE_DETACH, pid, nullptr, nullptr);
             tracking = false;
             return;
         }
         
+        fprintf(stderr, "DEBUG: Setting HW breakpoint\n");
         // Set hardware breakpoint NOW (while attached)
         if (!setHwBreakpointDirect(pid, trackedAddress, trackedType)) {
-            Gui::log("AccessTracker: Failed to set breakpoint");
+            fprintf(stderr, "DEBUG: Failed to set breakpoint\n");
+            // Gui::log("AccessTracker: Failed to set breakpoint");
             ptrace(PTRACE_DETACH, pid, nullptr, nullptr);
             tracking = false;
             return;
         }
         
-        Gui::log("AccessTracker: Breakpoint active, waiting for hits...");
+        fprintf(stderr, "DEBUG: Breakpoint set, entering loop\n");
+        // Gui::log("AccessTracker: Breakpoint active, waiting for hits...");
         
         // Main tracking loop
         while (!shouldStop.load()) {
             // Continue the process
             if (ptrace(PTRACE_CONT, pid, nullptr, nullptr) == -1) {
-                Gui::log("AccessTracker: PTRACE_CONT failed");
+                fprintf(stderr, "AccessTracker: PTRACE_CONT failed\n");
+                // Gui::log("AccessTracker: PTRACE_CONT failed");
                 break;
             }
             
@@ -121,7 +137,8 @@ namespace {
                 if (errno == EINTR && shouldStop.load()) {
                     break;
                 }
-                Gui::log("AccessTracker: waitpid error: {}", strerror(errno));
+                fprintf(stderr, "AccessTracker: waitpid error: %s\n", strerror(errno));
+                // Gui::log("AccessTracker: waitpid error: {}", strerror(errno));
                 break;
             }
             
@@ -152,7 +169,7 @@ namespace {
                         }
                         
                         if (readOk) {
-                            std::lock_guard<std::mutex> lock(recordsMutex);
+                            std::unique_lock<std::mutex> lock(recordsMutex);
                             
                             auto it = recordsMap.find(rip);
                             if (it != recordsMap.end()) {
@@ -165,7 +182,8 @@ namespace {
                                 record.isWrite = false;
                                 recordsMap[rip] = record;
                                 
-                                Gui::log("AccessTracker: New access from {:p}", rip);
+                                fprintf(stderr, "AccessTracker: New access from %p\n", rip);
+                                // Gui::log("AccessTracker: New access from {:p}", rip);
                             }
                         }
                     }
@@ -187,7 +205,8 @@ namespace {
             }
             
             if (WIFEXITED(status) || WIFSIGNALED(status)) {
-                Gui::log("AccessTracker: Target process terminated");
+                fprintf(stderr, "AccessTracker: Target process terminated\n");
+                // Gui::log("AccessTracker: Target process terminated");
                 break;
             }
         }
@@ -225,7 +244,7 @@ bool AccessTracker::startTracking(void* address, BreakpointType type) {
     
     // Clear previous records
     {
-        std::lock_guard<std::mutex> lock(recordsMutex);
+        std::unique_lock<std::mutex> lock(recordsMutex);
         recordsMap.clear();
     }
     
@@ -261,8 +280,12 @@ bool AccessTracker::isTracking() {
     return tracking.load();
 }
 
+bool AccessTracker::isAttached() {
+    return tracking.load();
+}
+
 std::vector<AccessRecord> AccessTracker::getRecords() {
-    std::lock_guard<std::mutex> lock(recordsMutex);
+    std::unique_lock<std::mutex> lock(recordsMutex);
     
     std::vector<AccessRecord> result;
     result.reserve(recordsMap.size());
@@ -280,12 +303,12 @@ std::vector<AccessRecord> AccessTracker::getRecords() {
 }
 
 void AccessTracker::clearRecords() {
-    std::lock_guard<std::mutex> lock(recordsMutex);
+    std::unique_lock<std::mutex> lock(recordsMutex);
     recordsMap.clear();
 }
 
 uint64_t AccessTracker::getTotalAccessCount() {
-    std::lock_guard<std::mutex> lock(recordsMutex);
+    std::unique_lock<std::mutex> lock(recordsMutex);
     uint64_t total = 0;
     for (const auto& [addr, record] : recordsMap) {
         total += record.accessCount;

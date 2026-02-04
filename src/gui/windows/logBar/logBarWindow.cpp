@@ -37,10 +37,13 @@ void LogBarWindow::draw() {
     }
 
     std::string logStr;
-    if (!Gui::logs.empty()) {
-        logStr = Gui::logs.back().first;
-        if (Gui::logs.back().second)
-            logStr += " x" + std::to_string(Gui::logs.back().second);
+    {
+        std::lock_guard<std::mutex> lock(Gui::logsMutex);
+        if (!Gui::logs.empty()) {
+            logStr = Gui::logs.back().first;
+            if (Gui::logs.back().second)
+                logStr += " x" + std::to_string(Gui::logs.back().second);
+        }
     }
     ImGui::TextUnformatted(logStr.c_str()); ImGui::SameLine();
     const std::string framerateStr = std::format("{:.2f}", io.Framerate);

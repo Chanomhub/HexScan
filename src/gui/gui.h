@@ -2,6 +2,7 @@
 #define HEX_SCAN_GUI_H
 
 #include "windows/generic/window.h"
+#include <mutex>
 
 #include <list>
 #include <string_view>
@@ -16,8 +17,11 @@ namespace Gui {
 
     void mainLoop();
 
+    extern std::mutex logsMutex;
+
     void log(const std::string_view rt_fmt_str, auto&&... args) {
         std::string str = std::vformat(rt_fmt_str, std::make_format_args(args...));
+        std::lock_guard<std::mutex> lock(logsMutex);
         if (!logs.empty() && str == logs.back().first)
             logs.back().second++;
         else

@@ -31,7 +31,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 
-set(COMMON_FLAGS "-Wall -Wextra -Winline -pipe -static-libgcc -fno-stack-protector -fcf-protection=none -fno-pie -no-pie")
+set(COMMON_FLAGS "-Wall -Wextra -Winline -pipe -static-libgcc -fno-stack-protector -fcf-protection=none")
 set(DEBUG_FLAGS "-g -ggdb3")
 set(RELEASE_FLAGS "-DNDEBUG -DNS_BLOCK_ASSERTIONS -O3 -flto")
 
@@ -59,6 +59,8 @@ find_package(imgui CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Fontconfig REQUIRED)
+# find_package(zydis CONFIG REQUIRED)
+add_subdirectory(external/zydis)
 
 add_executable(HexScan src/main.cpp
         src/gui/gui.cpp
@@ -94,9 +96,11 @@ add_executable(HexScan src/main.cpp
         src/backend/debugger/hwBreakpoint.cpp
         src/backend/debugger/accessTracker.cpp
         src/gui/windows/accessTracker/accessTrackerWindow.cpp
+        src/backend/disassembler/disassembler.cpp
+        src/backend/patch/patchManager.cpp
 )
 
-target_link_libraries(HexScan PRIVATE Vulkan::Vulkan imgui::imgui glfw fontconfig)
+target_link_libraries(HexScan PRIVATE Vulkan::Vulkan imgui::imgui glfw fontconfig Zydis::Zydis)
 
 configure_file(src/config/config.h.in config.h)
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")

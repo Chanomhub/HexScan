@@ -1,17 +1,23 @@
 #include "accessTrackerWindow.h"
 #include "../../../backend/debugger/accessTracker.h"
+#include "../../../backend/disassembler/disassembler.h"
+#include "../../../backend/patch/patchManager.h"
 #include "../../gui.h"
 
 #include <imgui.h>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 void AccessTrackerWindow::startWatch(void* address, BreakpointType type) {
+    std::cerr << "DEBUG: startWatch called for " << address << std::endl;
     stopWatch();  // Stop any existing watch
     
     watchAddress = address;
+    std::cerr << "DEBUG: Calling AccessTracker::startTracking" << std::endl;
     if (AccessTracker::startTracking(address, type)) {
         Gui::log("Access Tracker: Watching {:p}", address);
+        std::cerr << "DEBUG: startTracking success" << std::endl;
     } else {
         watchAddress = nullptr;
         Gui::log("Access Tracker: Failed to start");
@@ -48,7 +54,34 @@ void AccessTrackerWindow::drawControls() {
         // Refresh cached records periodically
         static int frameCount = 0;
         if (++frameCount % 30 == 0) {  // Every 30 frames
-            cachedRecords = AccessTracker::getRecords();
+            std::vector<AccessRecord> rawRecords = AccessTracker::getRecords();
+            
+            std::vector<DisplayRecord> newRecords;
+            newRecords.reserve(rawRecords.size());
+            
+            for (const auto& raw : rawRecords) {
+                DisplayRecord display;
+                display.record = raw;
+                
+                // Disassemble
+                auto instr = Disassembler::disassemble(raw.instructionBytes.data(), 
+                                                     raw.instructionBytes.size(), 
+                                                     reinterpret_cast<uint64_t>(raw.instructionAddress));
+                
+                if (instr.valid) {
+                    display.mnemonic = instr.mnemonic;
+                    display.operands = instr.operands;
+                    display.fullInstruction = instr.fullText;
+                    display.instructionLength = instr.length;
+                } else {
+                    display.fullInstruction = "??";
+                    display.instructionLength = 0;
+                }
+                
+                newRecords.push_back(display);
+            }
+            
+            cachedRecords = std::move(newRecords);
         }
     } else {
         ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "○ Not tracking");
@@ -74,12 +107,13 @@ void AccessTrackerWindow::drawResults() {
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("Count", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed, 60.0f);
         ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed, 140.0f);
-        ImGui::TableSetupColumn("Bytes (AOB)", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+        ImGui::TableSetupColumn("Instruction", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed, 180.0f);
         ImGui::TableHeadersRow();
         
         for (size_t i = 0; i < cachedRecords.size(); ++i) {
-            const auto& record = cachedRecords[i];
+            const auto& item = cachedRecords[i];
+            const auto& record = item.record;
             
             ImGui::TableNextRow();
             ImGui::PushID(static_cast<int>(i));
@@ -92,31 +126,50 @@ void AccessTrackerWindow::drawResults() {
             ImGui::TableNextColumn();
             ImGui::Text("%p", record.instructionAddress);
             
-            // Bytes as hex string
+            // Instruction
             ImGui::TableNextColumn();
-            std::string aobStr = AccessTracker::getAOBString(record);
-            
-            // Show first ~30 chars with ellipsis if too long
-            if (aobStr.length() > 40) {
-                ImGui::TextUnformatted((aobStr.substr(0, 40) + "...").c_str());
+            if (!item.fullInstruction.empty()) {
+                ImGui::TextUnformatted(item.fullInstruction.c_str());
             } else {
-                ImGui::TextUnformatted(aobStr.c_str());
+                ImGui::TextDisabled("?");
             }
             
-            // Tooltip with full AOB
+            // Tooltip with AOB details
             if (ImGui::IsItemHovered()) {
                 ImGui::BeginTooltip();
-                ImGui::PushTextWrapPos(400.0f);
-                ImGui::TextUnformatted(aobStr.c_str());
-                ImGui::PopTextWrapPos();
+                ImGui::Text("Mnemonic: %s", item.mnemonic.c_str());
+                ImGui::Text("Operands: %s", item.operands.c_str());
+                ImGui::Text("Bytes: %s", AccessTracker::getAOBString(record).c_str());
                 ImGui::EndTooltip();
             }
             
             // Actions
             ImGui::TableNextColumn();
-            if (ImGui::SmallButton("Copy")) {
-                ImGui::SetClipboardText(aobStr.c_str());
-                Gui::log("Copied AOB to clipboard: {}", aobStr.substr(0, 30));
+            
+            // NOP / Restore
+            bool isPatched = PatchManager::isPatched(record.instructionAddress);
+            
+            if (isPatched) {
+                if (ImGui::Button("Restore")) {
+                     PatchManager::restorePatch(record.instructionAddress);
+                }
+            } else {
+                if (item.instructionLength > 0) {
+                     if (ImGui::Button("NOP")) {
+                         PatchManager::nopInstruction(record.instructionAddress, item.instructionLength, item.fullInstruction);
+                     }
+                } else {
+                    ImGui::BeginDisabled();
+                    ImGui::Button("NOP");
+                    ImGui::EndDisabled();
+                }
+            }
+            
+            ImGui::SameLine();
+            
+            if (ImGui::Button("Copy AOB")) {
+                ImGui::SetClipboardText(AccessTracker::getAOBString(record).c_str());
+                Gui::log("Copied AOB to clipboard");
             }
             
             ImGui::PopID();

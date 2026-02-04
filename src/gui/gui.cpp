@@ -7,6 +7,7 @@
 namespace Gui {
     std::list<std::unique_ptr<Window>> windows;
     std::list<std::pair<std::string, int>> logs;
+    std::mutex logsMutex;
 }
 
 

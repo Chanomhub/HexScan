@@ -8,12 +8,14 @@ void LogsWindow::draw() {
     if (!ImGui::Begin(name.c_str(), &pOpen, ImGuiWindowFlags_MenuBar))
         return;
 
-    for (auto [logStr, multiplier]: Gui::logs) {
-        if (multiplier)
-            logStr += " x" + std::to_string(multiplier);
-        ImGui::TextUnformatted(logStr.c_str());
+    {
+        std::lock_guard<std::mutex> lock(Gui::logsMutex);
+        for (auto [logStr, multiplier]: Gui::logs) {
+            if (multiplier)
+                logStr += " x" + std::to_string(multiplier);
+            ImGui::TextUnformatted(logStr.c_str());
+        }
     }
-
 
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("Export")) {
@@ -25,6 +27,7 @@ void LogsWindow::draw() {
                 filename[strcspn(filename, "\n")] = 0;
 
                 std::ofstream logOutput(filename);
+                std::lock_guard<std::mutex> lock(Gui::logsMutex);
                 for (auto [logStr, multiplier]: Gui::logs) {
                     if (multiplier)
                         logStr += " x" + std::to_string(multiplier);

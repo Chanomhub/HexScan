@@ -14,9 +14,6 @@
       "name": "vulkan"
     },
     {
-      "name": "vulkan-headers"
-    },
-    {
       "name": "glfw3"
     }
   ]

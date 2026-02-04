@@ -4,10 +4,19 @@
 #include "../generic/window.h"
 #include "../../../backend/debugger/hwBreakpoint.h"
 #include <vector>
+#include <string>
+
+struct DisplayRecord {
+    AccessRecord record;
+    std::string mnemonic;
+    std::string operands;
+    std::string fullInstruction;
+    size_t instructionLength = 0;
+};
 
 class AccessTrackerWindow final : public Window {
     void* watchAddress = nullptr;
-    std::vector<AccessRecord> cachedRecords;
+    std::vector<DisplayRecord> cachedRecords;
     
     void drawControls();
     void drawResults();

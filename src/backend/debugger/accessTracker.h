@@ -19,6 +19,10 @@ namespace AccessTracker {
     // Check if tracking is active
     bool isTracking();
     
+    // Check if we are currently attached to the process (ptrace active)
+    // Used by VirtualMemory to decide how to read memory
+    bool isAttached();
+    
     // Get recorded accesses (thread-safe copy)
     std::vector<AccessRecord> getRecords();
     
