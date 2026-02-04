@@ -1,6 +1,8 @@
 #include "gui.h"
 #include "impl/imgui/imguiImpl.h"
 #include "windows/windows.h"
+#include "../backend/debugger/hwBreakpoint.h"
+#include "../backend/debugger/accessTracker.h"
 #include <map>
 
 
@@ -44,6 +46,11 @@ void Gui::mainLoop() {
 
         ImGuiImpl::render();
     }
+
+    // Cleanup debugger resources before closing to prevent game crashes
+    // Hardware breakpoints must be cleared or the game will crash when accessing watched memory
+    AccessTracker::stopTracking();
+    HwBreakpoint::clearAll();
 
     ImGuiImpl::destroy();
 }
