@@ -9,24 +9,71 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <cerrno>
+#include <cstring>
 
 namespace {
     std::atomic<bool> tracking{false};
     std::atomic<bool> shouldStop{false};
     std::thread trackerThread;
     
-    int breakpointSlot = -1;
     void* trackedAddress = nullptr;
+    BreakpointType trackedType = BreakpointType::DataReadWrite;
     
     std::mutex recordsMutex;
-    std::map<void*, AccessRecord> recordsMap;  // Keyed by instruction address
+    std::map<void*, AccessRecord> recordsMap;
     
-    // Number of instruction bytes to capture for AOB signature
     constexpr int INSTRUCTION_BYTES_TO_CAPTURE = 16;
+    
+    // Set hardware breakpoint directly (inline, no detach)
+    bool setHwBreakpointDirect(pid_t pid, void* address, BreakpointType type) {
+        constexpr size_t DR_OFFSET = offsetof(struct user, u_debugreg);
+        
+        // Set address in DR0
+        if (ptrace(PTRACE_POKEUSER, pid, DR_OFFSET, address) == -1) {
+            Gui::log("AccessTracker: Failed to set DR0: {}", strerror(errno));
+            return false;
+        }
+        
+        // Read current DR7
+        errno = 0;
+        long dr7 = ptrace(PTRACE_PEEKUSER, pid, DR_OFFSET + 7 * sizeof(long), nullptr);
+        if (errno != 0) {
+            Gui::log("AccessTracker: Failed to read DR7: {}", strerror(errno));
+            return false;
+        }
+        
+        // Enable local breakpoint for slot 0 (bit 0)
+        dr7 |= 1L;
+        
+        // Set condition (bits 16-17 for DR0)
+        dr7 &= ~(0b11L << 16);
+        dr7 |= (static_cast<long>(type) << 16);
+        
+        // Set length to 4 bytes (bits 18-19 for DR0)
+        dr7 &= ~(0b11L << 18);
+        dr7 |= (0b11L << 18);  // 0b11 = 4 bytes
+        
+        // Write DR7
+        if (ptrace(PTRACE_POKEUSER, pid, DR_OFFSET + 7 * sizeof(long), dr7) == -1) {
+            Gui::log("AccessTracker: Failed to write DR7: {}", strerror(errno));
+            return false;
+        }
+        
+        Gui::log("AccessTracker: Hardware breakpoint set at {:p}", address);
+        return true;
+    }
+    
+    // Clear DR6 status register
+    void clearDR6(pid_t pid) {
+        constexpr size_t DR_OFFSET = offsetof(struct user, u_debugreg);
+        ptrace(PTRACE_POKEUSER, pid, DR_OFFSET + 6 * sizeof(long), 0);
+    }
     
     void trackerLoop() {
         pid_t pid = SelectedProcess::pid;
         if (pid == detached) {
+            Gui::log("AccessTracker: No process attached");
             tracking = false;
             return;
         }
@@ -35,32 +82,46 @@ namespace {
         
         // Attach to process
         if (ptrace(PTRACE_ATTACH, pid, nullptr, nullptr) == -1) {
-            Gui::log("AccessTracker: Failed to attach");
+            Gui::log("AccessTracker: Failed to attach: {}", strerror(errno));
             tracking = false;
             return;
         }
         
         // Wait for initial stop
         int status;
-        waitpid(pid, &status, 0);
+        if (waitpid(pid, &status, 0) == -1) {
+            Gui::log("AccessTracker: waitpid failed");
+            ptrace(PTRACE_DETACH, pid, nullptr, nullptr);
+            tracking = false;
+            return;
+        }
         
-        // Continue and wait for breakpoint hits
+        // Set hardware breakpoint NOW (while attached)
+        if (!setHwBreakpointDirect(pid, trackedAddress, trackedType)) {
+            Gui::log("AccessTracker: Failed to set breakpoint");
+            ptrace(PTRACE_DETACH, pid, nullptr, nullptr);
+            tracking = false;
+            return;
+        }
+        
+        Gui::log("AccessTracker: Breakpoint active, waiting for hits...");
+        
+        // Main tracking loop
         while (!shouldStop.load()) {
             // Continue the process
-            ptrace(PTRACE_CONT, pid, nullptr, nullptr);
-            
-            // Wait for signal (with timeout to check shouldStop)
-            int result = waitpid(pid, &status, WNOHANG);
-            
-            if (result == 0) {
-                // No event yet, sleep briefly and check again
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                continue;
+            if (ptrace(PTRACE_CONT, pid, nullptr, nullptr) == -1) {
+                Gui::log("AccessTracker: PTRACE_CONT failed");
+                break;
             }
             
+            // Wait for signal
+            int result = waitpid(pid, &status, 0);  // Blocking wait
+            
             if (result == -1) {
-                // Error or process exited
-                Gui::log("AccessTracker: Process exited or error");
+                if (errno == EINTR && shouldStop.load()) {
+                    break;
+                }
+                Gui::log("AccessTracker: waitpid error: {}", strerror(errno));
                 break;
             }
             
@@ -69,42 +130,55 @@ namespace {
                 
                 if (sig == SIGTRAP) {
                     // Hardware breakpoint hit!
-                    
-                    // Get registers to find RIP
                     struct user_regs_struct regs;
-                    ptrace(PTRACE_GETREGS, pid, nullptr, &regs);
-                    
-                    void* rip = reinterpret_cast<void*>(regs.rip);
-                    
-                    // The instruction that caused the trap is at RIP
-                    // (or RIP-1 for some cases, but for data breakpoints it's usually at RIP)
-                    
-                    // Read instruction bytes
-                    std::vector<uint8_t> instrBytes(INSTRUCTION_BYTES_TO_CAPTURE);
-                    if (VirtualMemory::read(rip, instrBytes.data(), INSTRUCTION_BYTES_TO_CAPTURE)) {
-                        std::lock_guard<std::mutex> lock(recordsMutex);
+                    if (ptrace(PTRACE_GETREGS, pid, nullptr, &regs) == 0) {
+                        void* rip = reinterpret_cast<void*>(regs.rip);
                         
-                        auto it = recordsMap.find(rip);
-                        if (it != recordsMap.end()) {
-                            it->second.accessCount++;
-                        } else {
-                            AccessRecord record;
-                            record.instructionAddress = rip;
-                            record.instructionBytes = instrBytes;
-                            record.accessCount = 1;
-                            record.isWrite = false;  // We can't easily tell read vs write
-                            recordsMap[rip] = record;
+                        // Read instruction bytes
+                        std::vector<uint8_t> instrBytes(INSTRUCTION_BYTES_TO_CAPTURE);
+                        bool readOk = true;
+                        
+                        // Read using PTRACE_PEEKDATA (more reliable while attached)
+                        for (int i = 0; i < INSTRUCTION_BYTES_TO_CAPTURE; i += sizeof(long)) {
+                            errno = 0;
+                            long data = ptrace(PTRACE_PEEKDATA, pid, 
+                                             reinterpret_cast<char*>(rip) + i, nullptr);
+                            if (errno != 0) {
+                                readOk = false;
+                                break;
+                            }
+                            memcpy(&instrBytes[i], &data, 
+                                   std::min(sizeof(long), static_cast<size_t>(INSTRUCTION_BYTES_TO_CAPTURE - i)));
+                        }
+                        
+                        if (readOk) {
+                            std::lock_guard<std::mutex> lock(recordsMutex);
                             
-                            Gui::log("AccessTracker: New access from {:p}", rip);
+                            auto it = recordsMap.find(rip);
+                            if (it != recordsMap.end()) {
+                                it->second.accessCount++;
+                            } else {
+                                AccessRecord record;
+                                record.instructionAddress = rip;
+                                record.instructionBytes = instrBytes;
+                                record.accessCount = 1;
+                                record.isWrite = false;
+                                recordsMap[rip] = record;
+                                
+                                Gui::log("AccessTracker: New access from {:p}", rip);
+                            }
                         }
                     }
                     
-                    // Clear DR6 to re-arm the breakpoint
-                    HwBreakpoint::clearStatus();
+                    // Clear DR6
+                    clearDR6(pid);
                     
                 } else if (sig == SIGSTOP) {
-                    // Ignore SIGSTOP (we may have sent it)
-                    continue;
+                    // We might have sent this to stop tracking
+                    if (shouldStop.load()) {
+                        break;
+                    }
+                    // Otherwise continue
                 } else {
                     // Pass other signals to the process
                     ptrace(PTRACE_CONT, pid, nullptr, sig);
@@ -113,11 +187,17 @@ namespace {
             }
             
             if (WIFEXITED(status) || WIFSIGNALED(status)) {
-                // Process terminated
                 Gui::log("AccessTracker: Target process terminated");
                 break;
             }
         }
+        
+        // Clear breakpoint before detaching
+        constexpr size_t DR_OFFSET = offsetof(struct user, u_debugreg);
+        ptrace(PTRACE_POKEUSER, pid, DR_OFFSET, nullptr);  // Clear DR0
+        long dr7 = ptrace(PTRACE_PEEKUSER, pid, DR_OFFSET + 7 * sizeof(long), nullptr);
+        dr7 &= ~1L;  // Disable slot 0
+        ptrace(PTRACE_POKEUSER, pid, DR_OFFSET + 7 * sizeof(long), dr7);
         
         // Detach from process
         ptrace(PTRACE_DETACH, pid, nullptr, nullptr);
@@ -133,14 +213,13 @@ bool AccessTracker::startTracking(void* address, BreakpointType type) {
         return false;
     }
     
-    // Set hardware breakpoint
-    breakpointSlot = HwBreakpoint::set(address, type, BreakpointSize::Byte4);
-    if (breakpointSlot < 0) {
-        Gui::log("AccessTracker: Failed to set breakpoint");
+    if (SelectedProcess::pid == detached) {
+        Gui::log("AccessTracker: No process selected");
         return false;
     }
     
     trackedAddress = address;
+    trackedType = type;
     shouldStop = false;
     tracking = true;
     
@@ -172,12 +251,6 @@ void AccessTracker::stopTracking() {
     // Wait for thread to finish
     if (trackerThread.joinable()) {
         trackerThread.join();
-    }
-    
-    // Clear the breakpoint
-    if (breakpointSlot >= 0) {
-        HwBreakpoint::clear(breakpointSlot);
-        breakpointSlot = -1;
     }
     
     trackedAddress = nullptr;
