@@ -205,6 +205,8 @@ void ScannerWindow::scanControls() {
 void ScannerWindow::scanResults() {
     if (scanner.isScanRunning)
         return;
+    if (scanner.addresses.empty())
+        return;
     if (ImGui::BeginTable("CurrentAddresses", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("Address");
@@ -218,18 +220,28 @@ void ScannerWindow::scanResults() {
         ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
         ImGuiListClipper clipper;
         // Use addresses.size() to avoid out of bounds access
-        const int displayCount = static_cast<int>(scanner.addresses.size());
+        const size_t addrSize = scanner.addresses.size();
+        const int displayCount = static_cast<int>(addrSize);
         clipper.Begin(displayCount);
         while (clipper.Step()) {
-            for (int row = clipper.DisplayStart; row < clipper.DisplayEnd && row < displayCount; row++) {
+            for (int row = clipper.DisplayStart; row < clipper.DisplayEnd && static_cast<size_t>(row) < addrSize; row++) {
                 ImGui::TableNextRow();
                 ImGui::PushID(row);
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                if (scanner.regions.isStaticAddress(scanner.addresses[row])) {
-                    ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%p", scanner.addresses[row]);
+                
+                // Bounds check before accessing addresses
+                if (static_cast<size_t>(row) >= scanner.addresses.size()) {
+                    ImGui::PopID();
+                    break;
+                }
+                
+                void* currentAddr = scanner.addresses[row];
+                
+                if (scanner.regions.isStaticAddress(currentAddr)) {
+                    ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%p", currentAddr);
                 } else {
-                    ImGui::Text("%p", scanner.addresses[row]);
+                    ImGui::Text("%p", currentAddr);
                 }
 
 
@@ -237,11 +249,11 @@ void ScannerWindow::scanResults() {
                 ImGui::SetNextItemWidth(-1);
 
 
-                VirtualMemory::read(scanner.addresses[row], currentRowAddressValueBytes.data(), currentRowAddressValueBytes.size());
+                VirtualMemory::read(currentAddr, currentRowAddressValueBytes.data(), currentRowAddressValueBytes.size());
 
                 if (Widgets::valueInputTrueOnDeactivation(scanner.valueType, currentRowAddressValueBytes.data())) {
-                    if (VirtualMemory::write(currentRowAddressValueBytes.data(), scanner.addresses[row], currentRowAddressValueBytes.size()))
-                        Gui::log("Wrote {} to {:p}", scanner.valueType.format(currentRowAddressValueBytes.data(), false), scanner.addresses[row]);
+                    if (VirtualMemory::write(currentRowAddressValueBytes.data(), currentAddr, currentRowAddressValueBytes.size()))
+                        Gui::log("Wrote {} to {:p}", scanner.valueType.format(currentRowAddressValueBytes.data(), false), currentAddr);
                 }
 
 
@@ -258,7 +270,7 @@ void ScannerWindow::scanResults() {
                     if (ImGui::BeginMenu("Add to starred")) {
                         for (const auto starredAddressesWindow: Gui::getWindows<StarredAddressesWindow>()) {
                             if (ImGui::MenuItem(starredAddressesWindow->name.c_str()))
-                                starredAddressesWindow->addAddress("New address", scanner.addresses[row], scanner.valueType); // TODO: add window highlighting
+                                starredAddressesWindow->addAddress("New address", currentAddr, scanner.valueType);
                         }
 
                         ImGui::EndMenu();
@@ -268,7 +280,7 @@ void ScannerWindow::scanResults() {
 
                 if (ImGui::IsItemHovered() and ImGui::IsMouseDoubleClicked(0)) {
                     for (const auto starredAddressesWindow: Gui::getWindows<StarredAddressesWindow>()) {
-                        starredAddressesWindow->addAddress("New address", scanner.addresses[row], scanner.valueType);
+                        starredAddressesWindow->addAddress("New address", currentAddr, scanner.valueType);
                         break;
                     }
                 }
