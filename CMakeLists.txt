@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.28)
 
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake CACHE STRING "Vcpkg toolchain file")
 
-project(CheatTurbine VERSION 0.2.0)
+project(HexScan VERSION 0.2.0)
 
 
 set(ARCH_LEVEL "native" CACHE STRING "Target microarchitecture level")
@@ -60,7 +60,7 @@ find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Fontconfig REQUIRED)
 
-add_executable(CheatTurbine src/main.cpp
+add_executable(HexScan src/main.cpp
         src/gui/gui.cpp
         src/gui/impl/vulkan/vulkanImpl.cpp
         src/gui/impl/imgui/imguiImpl.cpp
@@ -93,7 +93,7 @@ add_executable(CheatTurbine src/main.cpp
         src/backend/CTvalue/CTvalue.cpp
 )
 
-target_link_libraries(CheatTurbine PRIVATE Vulkan::Vulkan imgui::imgui glfw fontconfig)
+target_link_libraries(HexScan PRIVATE Vulkan::Vulkan imgui::imgui glfw fontconfig)
 
 configure_file(src/config/config.h.in config.h)
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")

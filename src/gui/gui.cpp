@@ -13,7 +13,7 @@ namespace Gui {
 void Gui::mainLoop() {
     ImGuiImpl::init();
 
-    log("Welcome to Cheat Turbine!");
+    log("Welcome to HexScan!");
 
     addWindow(new MenuBarWindow());
     addWindow(new DockSpaceWindow());
@@ -25,7 +25,7 @@ void Gui::mainLoop() {
     SelectedProcess::subscribeToAttach([] {
         log("Attached to {}", SelectedProcess::pid);
         if (getuid())
-            log("It looks like Cheat Turbine is not running as root. If you are unsure of what you are doing, restart it as root.");
+            log("It looks like HexScan is not running as root. If you are unsure of what you are doing, restart it as root.");
     });
     SelectedProcess::subscribeToDetach([] { addWindow(new ProcessSelectorWindow()); });
     SelectedProcess::subscribeToDetach([] { log("Detached from {}", SelectedProcess::pid); });

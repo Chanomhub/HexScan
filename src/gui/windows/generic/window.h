@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_WINDOW_H
-#define CHEAT_TURBINE_WINDOW_H
+#ifndef HEX_SCAN_WINDOW_H
+#define HEX_SCAN_WINDOW_H
 
 #include <string>
 #include <imgui.h>
@@ -22,4 +22,4 @@ public:
 };
 
 
-#endif //CHEAT_TURBINE_WINDOW_H
+#endif //HEX_SCAN_WINDOW_H

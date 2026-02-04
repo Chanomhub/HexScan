@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_LOGBARWINDOW_H
-#define CHEAT_TURBINE_LOGBARWINDOW_H
+#ifndef HEX_SCAN_LOGBARWINDOW_H
+#define HEX_SCAN_LOGBARWINDOW_H
 
 #include "../generic/window.h"
 
@@ -9,4 +9,4 @@ class LogBarWindow final : public Window {
 };
 
 
-#endif //CHEAT_TURBINE_LOGBARWINDOW_H
+#endif //HEX_SCAN_LOGBARWINDOW_H

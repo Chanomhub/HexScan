@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_GUI_H
-#define CHEAT_TURBINE_GUI_H
+#ifndef HEX_SCAN_GUI_H
+#define HEX_SCAN_GUI_H
 
 #include "windows/generic/window.h"
 
@@ -18,7 +18,7 @@ namespace Gui {
 
     void log(const std::string_view rt_fmt_str, auto&&... args) {
         std::string str = std::vformat(rt_fmt_str, std::make_format_args(args...));
-        if (str == logs.back().first)
+        if (!logs.empty() && str == logs.back().first)
             logs.back().second++;
         else
             logs.emplace_back(str, 0);
@@ -37,4 +37,4 @@ namespace Gui {
 }
 
 
-#endif //CHEAT_TURBINE_GUI_H
+#endif //HEX_SCAN_GUI_H

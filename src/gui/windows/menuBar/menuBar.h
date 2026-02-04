@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_MENUBAR_H
-#define CHEAT_TURBINE_MENUBAR_H
+#ifndef HEX_SCAN_MENUBAR_H
+#define HEX_SCAN_MENUBAR_H
 
 #include "../generic/window.h"
 
@@ -9,4 +9,4 @@ class MenuBarWindow final : public Window {
 };
 
 
-#endif //CHEAT_TURBINE_MENUBAR_H
+#endif //HEX_SCAN_MENUBAR_H

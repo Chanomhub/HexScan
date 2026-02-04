@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_STARREDADDRESSESWINDOW_H
-#define CHEAT_TURBINE_STARREDADDRESSESWINDOW_H
+#ifndef HEX_SCAN_STARREDADDRESSESWINDOW_H
+#define HEX_SCAN_STARREDADDRESSESWINDOW_H
 
 #include "../generic/window.h"
 #include "../../../backend/starredAddress/starredAddress.h"
@@ -21,4 +21,4 @@ public:
 };
 
 
-#endif //CHEAT_TURBINE_STARREDADDRESSESWINDOW_H
+#endif //HEX_SCAN_STARREDADDRESSESWINDOW_H

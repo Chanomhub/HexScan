@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_MEMORYEDITORWINDOW_H
-#define CHEAT_TURBINE_MEMORYEDITORWINDOW_H
+#ifndef HEX_SCAN_MEMORYEDITORWINDOW_H
+#define HEX_SCAN_MEMORYEDITORWINDOW_H
 
 #include "../generic/window.h"
 #include "../../../backend/CTvalue/CTvalue.h"
@@ -33,4 +33,4 @@ public:
 };
 
 
-#endif //CHEAT_TURBINE_MEMORYEDITORWINDOW_H
+#endif //HEX_SCAN_MEMORYEDITORWINDOW_H

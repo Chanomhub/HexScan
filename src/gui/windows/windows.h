@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_WINDOWS_H
-#define CHEAT_TURBINE_WINDOWS_H
+#ifndef HEX_SCAN_WINDOWS_H
+#define HEX_SCAN_WINDOWS_H
 
 
 #include "dockSpace/dockSpaceWindow.h"
@@ -17,4 +17,4 @@
 #include "pchainEditor/pchainEditorWindow.h"
 #include "structureDissector/structureDissectorWindow.h"
 
-#endif //CHEAT_TURBINE_WINDOWS_H
+#endif //HEX_SCAN_WINDOWS_H

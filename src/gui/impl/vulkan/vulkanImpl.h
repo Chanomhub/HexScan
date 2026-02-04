@@ -7,8 +7,8 @@
 // - Introduction, links and more at the top of imgui.cpp
 
 
-#ifndef CHEAT_TURBINE_GUIIMPL_H
-#define CHEAT_TURBINE_GUIIMPL_H
+#ifndef HEX_SCAN_GUIIMPL_H
+#define HEX_SCAN_GUIIMPL_H
 
 #define GLFW_INCLUDE_VULKAN
 
@@ -47,4 +47,4 @@ namespace VulkanImpl {
     void FramePresent(ImGui_ImplVulkanH_Window *wd);
 }
 
-#endif //CHEAT_TURBINE_GUIIMPL_H
+#endif //HEX_SCAN_GUIIMPL_H

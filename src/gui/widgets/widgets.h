@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_WIDGETS_H
-#define CHEAT_TURBINE_WIDGETS_H
+#ifndef HEX_SCAN_WIDGETS_H
+#define HEX_SCAN_WIDGETS_H
 
 #include "../../backend/CTvalue/CTvalue.h"
 
@@ -12,4 +12,4 @@ namespace Widgets {
     bool tristateCheckbox(const char* label, int* state);
 }
 
-#endif //CHEAT_TURBINE_WIDGETS_H
+#endif //HEX_SCAN_WIDGETS_H

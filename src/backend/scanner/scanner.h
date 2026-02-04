@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_SCANNER_H
-#define CHEAT_TURBINE_SCANNER_H
+#ifndef HEX_SCAN_SCANNER_H
+#define HEX_SCAN_SCANNER_H
 
 #include "../regions/regions.h"
 #include <vector>
@@ -71,4 +71,4 @@ public:
 };
 
 
-#endif //CHEAT_TURBINE_SCANNER_H
+#endif //HEX_SCAN_SCANNER_H

@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_VIRTUALMEMORY_H
-#define CHEAT_TURBINE_VIRTUALMEMORY_H
+#ifndef HEX_SCAN_VIRTUALMEMORY_H
+#define HEX_SCAN_VIRTUALMEMORY_H
 
 
 namespace VirtualMemory {
@@ -7,4 +7,4 @@ namespace VirtualMemory {
     bool write(void* from, void* to, unsigned long long length);
 }
 
-#endif //CHEAT_TURBINE_VIRTUALMEMORY_H
+#endif //HEX_SCAN_VIRTUALMEMORY_H

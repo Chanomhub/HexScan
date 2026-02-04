@@ -1,5 +1,5 @@
-#ifndef CHEAT_TURBINE_MEMORYREGION_H
-#define CHEAT_TURBINE_MEMORYREGION_H
+#ifndef HEX_SCAN_MEMORYREGION_H
+#define HEX_SCAN_MEMORYREGION_H
 
 #include <string>
 
@@ -24,4 +24,4 @@ struct Region {
 };
 
 
-#endif //CHEAT_TURBINE_MEMORYREGION_H
+#endif //HEX_SCAN_MEMORYREGION_H
