@@ -14,6 +14,11 @@ namespace Disassembler {
         bool isWrite;              // is it writing to memory?
         bool isRead;               // is it reading from memory?
         bool valid;                // successfully disassembled
+        
+        // Control flow
+        uint64_t targetAddress;    // Address of jump/call target (0 if not applicable)
+        bool isBranch;             // is it a jump/call/ret?
+        bool isConditional;        // is it a conditional jump?
     };
     
     // Initialize Zydis decoder/formatter if needed

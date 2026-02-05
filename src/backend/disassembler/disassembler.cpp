@@ -1,5 +1,6 @@
 #include "disassembler.h"
 #include <Zydis/Zydis.h>
+#include <Zydis/Utils.h>
 #include <cstring>
 #include <algorithm>
 
@@ -72,6 +73,22 @@ namespace Disassembler {
                         if (op.actions & ZYDIS_OPERAND_ACTION_WRITE) result.isWrite = true;
                     }
                 }
+                
+                // Calculate branch target
+                uint64_t target = 0;
+                if (ZYAN_SUCCESS(ZydisCalcAbsoluteAddress(&instruction, operands, address, &target))) {
+                     result.targetAddress = target;
+                } else {
+                    result.targetAddress = 0;
+                }
+
+                // Check meta info
+                result.isBranch = (instruction.meta.category == ZYDIS_CATEGORY_COND_BR || 
+                                   instruction.meta.category == ZYDIS_CATEGORY_UNCOND_BR ||
+                                   instruction.meta.category == ZYDIS_CATEGORY_CALL ||
+                                   instruction.meta.category == ZYDIS_CATEGORY_RET);
+                                   
+                result.isConditional = (instruction.meta.category == ZYDIS_CATEGORY_COND_BR);
             }
         }
         

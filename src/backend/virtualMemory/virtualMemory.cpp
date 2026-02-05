@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <sys/uio.h>
 #include <sys/ptrace.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -71,6 +72,21 @@ bool VirtualMemory::writeCode(void* from, void* to, const unsigned long long len
     uint8_t* src = static_cast<uint8_t*>(from);
     uint8_t* dst = static_cast<uint8_t*>(to);
     
+    // We need to ptrace attach to use POKETEXT
+    bool needsAttach = true;
+    
+    if (needsAttach) {
+        if (ptrace(PTRACE_ATTACH, pid, nullptr, nullptr) == -1) {
+            Gui::log("VirtualMemory::writeCode: PTRACE_ATTACH failed: {}", strerror(errno));
+            return false;
+        }
+        // Wait for process to stop
+        int status;
+        waitpid(pid, &status, 0);
+    }
+    
+    bool success = true;
+    
     // PTRACE_POKETEXT writes one word (8 bytes on x64) at a time
     // and can write to read-only memory regions
     
@@ -86,7 +102,8 @@ bool VirtualMemory::writeCode(void* from, void* to, const unsigned long long len
             if (errno != 0) {
                 Gui::log("VirtualMemory::writeCode: PEEKTEXT failed at {:p}: {}", 
                          static_cast<void*>(dst + offset), strerror(errno));
-                return false;
+                success = false;
+                break;
             }
         }
         
@@ -97,9 +114,15 @@ bool VirtualMemory::writeCode(void* from, void* to, const unsigned long long len
         if (ptrace(PTRACE_POKETEXT, pid, dst + offset, word) == -1) {
             Gui::log("VirtualMemory::writeCode: POKETEXT failed at {:p}: {}", 
                      static_cast<void*>(dst + offset), strerror(errno));
-            return false;
+            success = false;
+            break;
         }
     }
     
-    return true;
+    // Detach from process so it can continue
+    if (needsAttach) {
+        ptrace(PTRACE_DETACH, pid, nullptr, nullptr);
+    }
+    
+    return success;
 }

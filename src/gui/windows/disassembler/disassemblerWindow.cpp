@@ -79,6 +79,9 @@ void DisassemblerWindow::refreshInstructions() {
             line.operands = instr.operands;
             line.fullText = instr.fullText;
             line.length = instr.length;
+            line.isBranch = instr.isBranch;
+            line.isConditional = instr.isConditional;
+            line.targetAddress = instr.targetAddress;
             
             instructions.push_back(line);
             
@@ -125,23 +128,34 @@ void DisassemblerWindow::drawTable() {
     }
 
     // Main Table
-    if (ImGui::BeginTable("DisasmTable", 4, 
+    if (ImGui::BeginTable("DisasmTable", 5, 
         ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter)) {
         
+        ImGui::TableSetupColumn("Flow", ImGuiTableColumnFlags_WidthFixed, 30.0f);
         ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed, 120.0f);
         ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed, 180.0f);
         ImGui::TableSetupColumn("Opcode", ImGuiTableColumnFlags_WidthFixed, 60.0f);
         ImGui::TableSetupColumn("Operands", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        std::unordered_map<uint64_t, float> addrY;
+        float xBase = 0.0f; // X position of the Flow column
         
         for (const auto& line : instructions) {
             ImGui::TableNextRow();
             
+            // Flow Column
+            ImGui::TableNextColumn();
+            float currY = ImGui::GetCursorScreenPos().y + ImGui::GetTextLineHeight() / 2.0f;
+            addrY[line.address] = currY;
+            xBase = ImGui::GetCursorScreenPos().x;
+
             // Address
             ImGui::TableNextColumn();
             ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "%p", (void*)line.address);
             if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-                 ImGui::SetClipboardText(std::to_string(line.address).c_str()); // Or hex string
+                 ImGui::SetClipboardText(std::to_string(line.address).c_str()); 
             }
             
             // Bytes
@@ -156,7 +170,7 @@ void DisassemblerWindow::drawTable() {
             ImGui::TableNextColumn();
             ImGui::Text("%s", line.operands.c_str());
 
-            // Context Menu
+            // ... Context Menu ...
             if (ImGui::BeginPopupContextItem(std::to_string(line.address).c_str())) {
                 if (ImGui::MenuItem("Copy Address")) {
                     ImGui::SetClipboardText(std::format("{:x}", line.address).c_str());
@@ -182,14 +196,47 @@ void DisassemblerWindow::drawTable() {
                 }
                 ImGui::EndPopup();
             }
-            // Allow right-click anywhere on the row to open context menu
-            // We need to use specific ID for the popup to work on row
-            // But we can't easily span row with one item. 
-            // Instead, we attach popup to the last column or try to attach to row.
-            // Actually, attaching to specific columns is easier. Let's make sure it works.
-            // The simplest way is to repeat the popup logic or use OpenPopupOnItemClick with a specific ID.
         }
         
+        // Draw Lines (Overlay)
+        // We draw *after* the loop so we have all Y positions
+        for (const auto& line : instructions) {
+            if (line.isBranch && line.targetAddress != 0) {
+                float y1 = addrY[line.address];
+                float x = xBase + 20.0f; // Center of Flow column
+
+                ImU32 col = line.isConditional ? IM_COL32(0, 255, 255, 255) : IM_COL32(200, 200, 200, 255);
+                
+                if (addrY.count(line.targetAddress)) {
+                    // Target is visible
+                    float y2 = addrY[line.targetAddress];
+                    
+                    // Simple bracket shape
+                    drawList->AddLine(ImVec2(x, y1), ImVec2(x - 5, y1), col);
+                    drawList->AddLine(ImVec2(x - 5, y1), ImVec2(x - 5, y2), col);
+                    drawList->AddLine(ImVec2(x - 5, y2), ImVec2(x, y2), col);
+                    
+                    // Arrow head at target
+                    drawList->AddTriangleFilled(
+                        ImVec2(x, y2),
+                        ImVec2(x - 4, y2 - 3),
+                        ImVec2(x - 4, y2 + 3),
+                        col
+                    );
+                } else {
+                    // Target not visible - Point Up/Down
+                    bool isUp = line.targetAddress < line.address;
+                    float y2 = isUp ? y1 - 10 : y1 + 10;
+                    
+                    drawList->AddLine(ImVec2(x, y1), ImVec2(x - 5, y1), col);
+                    drawList->AddLine(ImVec2(x - 5, y1), ImVec2(x - 5, y2), col);
+                    
+                    // Arrow head pointing off-screen
+                    // (Optional)
+                }
+            }
+        }
+
         ImGui::EndTable();
     }
 }

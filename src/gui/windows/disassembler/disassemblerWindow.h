@@ -17,6 +17,9 @@ private:
         std::string operands;
         std::string fullText;
         size_t length;
+        bool isBranch;
+        bool isConditional;
+        uint64_t targetAddress;
     };
     
     std::vector<DisassembledLine> instructions;
