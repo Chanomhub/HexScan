@@ -59,8 +59,8 @@ find_package(imgui CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Fontconfig REQUIRED)
-# find_package(zydis CONFIG REQUIRED)
-add_subdirectory(external/zydis)
+find_package(zydis CONFIG REQUIRED)
+#add_subdirectory(external/zydis)
 
 add_executable(HexScan src/main.cpp
         src/gui/gui.cpp

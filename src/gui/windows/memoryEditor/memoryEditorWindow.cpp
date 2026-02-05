@@ -159,6 +159,7 @@ void MemoryEditorWindow::draw() {
     } else {
         ImGui::PopStyleColor();
         imGuiStyle = originalStyle;
+        ImGui::End();
     }
 }
 
