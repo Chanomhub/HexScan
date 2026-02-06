@@ -143,8 +143,8 @@ void StructureDissectorWindow::drawFields(std::vector<std::list<StructureField> 
             ImGui::SetNextItemWidth(-1);
 
             if (Widgets::valueInputTrueOnDeactivation(type, (char*)buf + offset, false, stringSize)) {
-                if (VirtualMemory::write((char*)buf + offset, address + offset, type.getSize()))
-                    Gui::log("Wrote {} to {:p}", type.format((char*)buf + offset, false), address + offset);
+                if (VirtualMemory::write((char*)buf + offset, (char*)address + offset, type.getSize()))
+                    Gui::log("Wrote {} to {:p}", type.format((char*)buf + offset, false), (void*)((char*)address + offset));
             }
 
             ImGui::TableNextColumn();

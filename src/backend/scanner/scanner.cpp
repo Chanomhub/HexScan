@@ -102,7 +102,8 @@ std::function<bool(void*)> Scanner::getStringComparator() {
             };
         case unknown:
             return [](void* mem) {
-                return *(uint8_t*)mem >= ' ' and *(uint8_t*)mem <= '~' and *(uint8_t*)(mem + 1) >= ' ' and *(uint8_t*)(mem + 1) <= '~';
+                auto* p = static_cast<uint8_t*>(mem);
+                return p[0] >= ' ' && p[0] <= '~' && p[1] >= ' ' && p[1] <= '~';
             };
     }
 
