@@ -2,121 +2,214 @@
 #include "aobUtils.h"
 
 #include <cmath>
+#include <cstring>
+#include <algorithm>
+#include <stdexcept>
+#include <thread>
 
 #include "../selectedProcess/selectedProcess.h"
 #include "../virtualMemory/virtualMemory.h"
 #include "../../gui/gui.h"
 
-#include <fstream>
-#include <thread>
-#include <functional>
-#include <utility>
+// RAII helper class for process suspension
+class ProcessSuspensionGuard {
+    bool shouldResume;
+    
+public:
+    ProcessSuspensionGuard(bool shouldSuspend) : shouldResume(false) {
+        if (shouldSuspend && !SelectedProcess::isSuspended()) {
+            SelectedProcess::suspend();
+            shouldResume = true;
+        }
+    }
+    
+    ~ProcessSuspensionGuard() {
+        if (shouldResume) {
+            SelectedProcess::resume();
+        }
+    }
+    
+    ProcessSuspensionGuard(const ProcessSuspensionGuard&) = delete;
+    ProcessSuspensionGuard& operator=(const ProcessSuspensionGuard&) = delete;
+};
 
-Scanner::Scanner(const char* name) {
-    this->name = name;
-    latestValues = malloc(256);
+Scanner::Scanner(std::string_view name) : name(name) {
+    latestValues.reserve(256);
+    valueBytes.reserve(32);
+    valueBytesSecond.reserve(32);
     reset();
 }
 
-
 template<typename T>
-std::function<bool(void*)> Scanner::getCommonComparator() {
+std::function<bool(const void*)> Scanner::getCommonComparator() const {
     switch (scanType) {
-        case equal:
-            if constexpr (std::is_same_v<T, float> or std::is_same_v<T, double>)
-                return [this](void* mem) {
-                    return std::abs(*(T*)mem - *(T*)valueBytes.data()) < 0.001f;
+        case ScanType::Equal:
+            if constexpr (std::is_floating_point_v<T>) {
+                return [this](const void* mem) {
+                    return std::abs(*static_cast<const T*>(mem) - 
+                                  *reinterpret_cast<const T*>(valueBytes.data())) < static_cast<T>(0.001);
                 };
-            return [this](void* mem) {
-                return *(T*)mem == *(T*)valueBytes.data();
+            }
+            return [this](const void* mem) {
+                return *static_cast<const T*>(mem) == 
+                       *reinterpret_cast<const T*>(valueBytes.data());
             };
-        case bigger:
-            return [this](void* mem) {
-                return *(T*)mem > *(T*)valueBytes.data();
+            
+        case ScanType::Bigger:
+            return [this](const void* mem) {
+                return *static_cast<const T*>(mem) > 
+                       *reinterpret_cast<const T*>(valueBytes.data());
             };
-        case smaller:
-            return [this](void* mem) {
-                return *(T*)mem < *(T*)valueBytes.data();
+            
+        case ScanType::Smaller:
+            return [this](const void* mem) {
+                return *static_cast<const T*>(mem) < 
+                       *reinterpret_cast<const T*>(valueBytes.data());
             };
-        case range:
-            return [this](void* mem) {
-                return *(T*)mem > *(T*)valueBytes.data() and *(T*)mem < *(T*)valueBytesSecond.data();
+            
+        case ScanType::Range:
+            return [this](const void* mem) {
+                const T val = *static_cast<const T*>(mem);
+                const T min = *reinterpret_cast<const T*>(valueBytes.data());
+                const T max = *reinterpret_cast<const T*>(valueBytesSecond.data());
+                return val > min && val < max;
             };
-        case increased:
-            return [this](void* mem) {
-                return *(T*)mem > *(T*)((char*)latestValues + scannedAddresses * valueBytes.size());
+            
+        case ScanType::Increased: {
+            const size_t valueSize = sizeof(T);
+            return [this, valueSize](const void* mem) {
+                const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                if (idx * valueSize >= latestValues.size()) return false;
+                return *static_cast<const T*>(mem) > 
+                       *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
             };
-        case increasedBy:
-            if constexpr (std::is_same_v<T, float> or std::is_same_v<T, double>)
-                return [this](void* mem) {
-                    return std::abs(*(T*)mem - *(T*)((char*)latestValues + scannedAddresses * valueBytes.size()) - *(T*)valueBytes.data()) < 0.001f;
+        }
+            
+        case ScanType::IncreasedBy: {
+            const size_t valueSize = sizeof(T);
+            if constexpr (std::is_floating_point_v<T>) {
+                return [this, valueSize](const void* mem) {
+                    const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                    if (idx * valueSize >= latestValues.size()) return false;
+                    const T current = *static_cast<const T*>(mem);
+                    const T previous = *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
+                    const T expected = *reinterpret_cast<const T*>(valueBytes.data());
+                    return std::abs(current - previous - expected) < static_cast<T>(0.001);
                 };
-            return [this](void* mem) {
-                return *(T*)mem - *(T*)((char*)latestValues + scannedAddresses * valueBytes.size()) == *(T*)valueBytes.data();
+            }
+            return [this, valueSize](const void* mem) {
+                const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                if (idx * valueSize >= latestValues.size()) return false;
+                const T current = *static_cast<const T*>(mem);
+                const T previous = *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
+                const T expected = *reinterpret_cast<const T*>(valueBytes.data());
+                return current - previous == expected;
             };
-        case decreased:
-            return [this](void* mem) {
-                return *(T*)mem < *(T*)((char*)latestValues + scannedAddresses * valueBytes.size());
+        }
+            
+        case ScanType::Decreased: {
+            const size_t valueSize = sizeof(T);
+            return [this, valueSize](const void* mem) {
+                const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                if (idx * valueSize >= latestValues.size()) return false;
+                return *static_cast<const T*>(mem) < 
+                       *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
             };
-        case decreasedBy:
-            if constexpr (std::is_same_v<T, float> or std::is_same_v<T, double>)
-                return [this](void* mem) {
-                    return std::abs(*(T*)((char*)latestValues + scannedAddresses * valueBytes.size()) - *(T*)mem - *(T*)valueBytes.data()) < 0.001f;
+        }
+            
+        case ScanType::DecreasedBy: {
+            const size_t valueSize = sizeof(T);
+            if constexpr (std::is_floating_point_v<T>) {
+                return [this, valueSize](const void* mem) {
+                    const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                    if (idx * valueSize >= latestValues.size()) return false;
+                    const T current = *static_cast<const T*>(mem);
+                    const T previous = *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
+                    const T expected = *reinterpret_cast<const T*>(valueBytes.data());
+                    return std::abs(previous - current - expected) < static_cast<T>(0.001);
                 };
-            return [this](void* mem) {
-                return *(T*)((char*)latestValues + scannedAddresses * valueBytes.size()) - *(T*)mem == *(T*)valueBytes.data();
+            }
+            return [this, valueSize](const void* mem) {
+                const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                if (idx * valueSize >= latestValues.size()) return false;
+                const T current = *static_cast<const T*>(mem);
+                const T previous = *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
+                const T expected = *reinterpret_cast<const T*>(valueBytes.data());
+                return previous - current == expected;
             };
-        case changed:
-            return [this](void* mem) {
-                return *(T*)mem != *(T*)((char*)latestValues + scannedAddresses * valueBytes.size());
+        }
+            
+        case ScanType::Changed: {
+            const size_t valueSize = sizeof(T);
+            return [this, valueSize](const void* mem) {
+                const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                if (idx * valueSize >= latestValues.size()) return false;
+                return *static_cast<const T*>(mem) != 
+                       *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
             };
-        case unchanged:
-            return [this](void* mem) {
-                return *(T*)mem == *(T*)((char*)latestValues + scannedAddresses * valueBytes.size());
+        }
+            
+        case ScanType::Unchanged: {
+            const size_t valueSize = sizeof(T);
+            return [this, valueSize](const void* mem) {
+                const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                if (idx * valueSize >= latestValues.size()) return false;
+                return *static_cast<const T*>(mem) == 
+                       *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
             };
-        case unknown:
-            return [](void*) {
+        }
+            
+        case ScanType::Unknown:
+            return [](const void*) {
                 return true;
             };
     }
-
-    std::unreachable();
+    
+    throw std::runtime_error("Invalid scan type");
 }
 
-std::function<bool(void*)> Scanner::getStringComparator() {
-    static uint16_t tempStringSize;
-    tempStringSize = strlen((char*)valueBytes.data());
-
+std::function<bool(const void*)> Scanner::getStringComparator() const {
+    const size_t stringSize = valueBytes.size();
+    
     switch (scanType) {
-        case equal:
-            return [this](void* mem) {
-                return strncmp((char*)mem, (char*)valueBytes.data(), tempStringSize) == 0;
+        case ScanType::Equal:
+            return [this, stringSize](const void* mem) {
+                return std::memcmp(mem, valueBytes.data(), stringSize) == 0;
             };
-        case changed:
-            return [this](void* mem) {
-                return strncmp((char*)mem, (char*)latestValues + scannedAddresses * valueBytes.size(), tempStringSize);
+            
+        case ScanType::Changed: {
+            return [this, stringSize](const void* mem) {
+                const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                if (idx * stringSize >= latestValues.size()) return false;
+                return std::memcmp(mem, latestValues.data() + idx * stringSize, stringSize) != 0;
             };
-        case unchanged:
-            return [this](void* mem) {
-                return strncmp((char*)mem, (char*)latestValues + scannedAddresses * valueBytes.size(), tempStringSize) == 0;
+        }
+            
+        case ScanType::Unchanged: {
+            return [this, stringSize](const void* mem) {
+                const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                if (idx * stringSize >= latestValues.size()) return false;
+                return std::memcmp(mem, latestValues.data() + idx * stringSize, stringSize) == 0;
             };
-        case unknown:
-            return [](void* mem) {
-                auto* p = static_cast<uint8_t*>(mem);
-                return p[0] >= ' ' && p[0] <= '~' && p[1] >= ' ' && p[1] <= '~';
+        }
+            
+        case ScanType::Unknown:
+            return [](const void* mem) {
+                const auto* p = static_cast<const uint8_t*>(mem);
+                // Check if first two bytes are printable ASCII
+                return (p[0] >= ' ' && p[0] <= '~') && (p[1] >= ' ' && p[1] <= '~');
             };
+            
+        default:
+            throw std::runtime_error("Unsupported scan type for string");
     }
-
-    std::unreachable();
 }
 
-
-std::function<bool(void*)> Scanner::getAOBComparator() {
-    // AOB only supports "equal" scan type
+std::function<bool(const void*)> Scanner::getAOBComparator() const {
     const size_t patternSize = valueBytes.size();
     
-    return [this, patternSize](void* mem) {
-        const uint8_t* memPtr = static_cast<const uint8_t*>(mem);
+    return [this, patternSize](const void* mem) {
+        const auto* memPtr = static_cast<const uint8_t*>(mem);
         const uint8_t* patternPtr = valueBytes.data();
         const uint8_t* maskPtr = valueMask.data();
         
@@ -129,186 +222,232 @@ std::function<bool(void*)> Scanner::getAOBComparator() {
     };
 }
 
-
-std::function<bool(void*)> Scanner::getTypeSpecificComparator() {
+std::function<bool(const void*)> Scanner::getTypeSpecificComparator() const {
     switch (valueType.type) {
         case i64:
             if (valueType.flags & isSigned)
                 return getCommonComparator<int64_t>();
             return getCommonComparator<uint64_t>();
+            
         case i32:
             if (valueType.flags & isSigned)
                 return getCommonComparator<int32_t>();
             return getCommonComparator<uint32_t>();
+            
         case i16:
             if (valueType.flags & isSigned)
                 return getCommonComparator<int16_t>();
             return getCommonComparator<uint16_t>();
+            
         case i8:
             if (valueType.flags & isSigned)
                 return getCommonComparator<int8_t>();
             return getCommonComparator<uint8_t>();
+            
         case f64:
-            return getCommonComparator<double_t>();
+            return getCommonComparator<double>();
+            
         case f32:
-            return getCommonComparator<float_t>();
+            return getCommonComparator<float>();
+            
         case string:
             return getStringComparator();
+            
         case byteArray:
             return getAOBComparator();
     }
-
-    std::unreachable();
+    
+    throw std::runtime_error("Invalid value type");
 }
-
 
 void Scanner::newScan() {
-    isScanRunning = true;
-    scannedAddresses = 0;
-    std::thread(static_cast<void (Scanner::*)(std::function<bool(void*)>)>(&Scanner::newScan), this, getTypeSpecificComparator()).detach();
+    if (isScanRunning.load(std::memory_order_acquire)) {
+        throw std::runtime_error("Scan is already running");
+    }
+    
+    isScanRunning.store(true, std::memory_order_release);
+    scannedAddresses.store(0, std::memory_order_release);
+    
+    std::thread([this]() {
+        try {
+            performNewScan(getTypeSpecificComparator());
+        } catch (const std::exception& e) {
+            Gui::log("{}: Error during scan: {}", name, e.what());
+            isScanRunning.store(false, std::memory_order_release);
+        }
+    }).detach();
 }
-
 
 void Scanner::nextScan() {
-    isScanRunning = true;
-    scannedAddresses = 0;
-    std::thread(static_cast<void (Scanner::*)(std::function<bool(void*)>)>(&Scanner::nextScan), this, getTypeSpecificComparator()).detach();
+    if (isScanRunning.load(std::memory_order_acquire)) {
+        throw std::runtime_error("Scan is already running");
+    }
+    
+    if (isReset.load(std::memory_order_acquire)) {
+        throw std::runtime_error("No previous scan exists, use newScan() first");
+    }
+    
+    isScanRunning.store(true, std::memory_order_release);
+    scannedAddresses.store(0, std::memory_order_release);
+    
+    std::thread([this]() {
+        try {
+            performNextScan(getTypeSpecificComparator());
+        } catch (const std::exception& e) {
+            Gui::log("{}: Error during scan: {}", name, e.what());
+            isScanRunning.store(false, std::memory_order_release);
+        }
+    }).detach();
 }
 
-
-void Scanner::newScan(const std::function<bool(void*)> cmp) {
-    bool wasAttachedProgram = SelectedProcess::isSuspended();
-    if (shouldSuspendWhileScanning and !SelectedProcess::isSuspended())
-        SelectedProcess::suspend();
-
-    unsigned long long matchingAddresses = 0;
+void Scanner::performNewScan(std::function<bool(const void*)> cmp) {
+    ProcessSuspensionGuard guard(shouldSuspendWhileScanning);
+    
+    std::lock_guard<std::mutex> lock(scanMutex);
+    
+    uint64_t matchingAddresses = 0;
+    uint64_t totalScannedAddresses = 0;
+    
     regions.parse();
-    for (auto& i : regions.regions)
-        totalAddresses += ((char*)i.end - (char*)i.start) / fastScanOffset;
-
-
-    void* memory = malloc(regions.largestRegionSize);
-
-
-    for (auto& [start, end, mode, offset, device, inodeID, fname]: regions.regions) {
-        const unsigned long long regionSize = (char*)end - (char*)start;
-
-
-        if (!VirtualMemory::read(start, memory, regionSize))
+    
+    // Calculate total addresses
+    for (const auto& region : regions.regions) {
+        const auto regionSize = static_cast<const uint8_t*>(region.end) - 
+                               static_cast<const uint8_t*>(region.start);
+        totalScannedAddresses += regionSize / fastScanOffset;
+    }
+    totalAddresses.store(totalScannedAddresses, std::memory_order_release);
+    
+    // Pre-allocate vectors
+    std::vector<uintptr_t> newAddresses;
+    std::vector<uint8_t> newLatestValues;
+    newAddresses.reserve(std::min(totalScannedAddresses, uint64_t(1000000)));
+    newLatestValues.reserve(std::min(totalScannedAddresses * valueBytes.size(), size_t(100000000)));
+    
+    // Allocate memory buffer
+    std::vector<uint8_t> memory(regions.largestRegionSize);
+    
+    for (const auto& [start, end, mode, offset, device, inodeID, fname] : regions.regions) {
+        const size_t regionSize = static_cast<const uint8_t*>(end) - 
+                                 static_cast<const uint8_t*>(start);
+        
+        if (!VirtualMemory::read(start, memory.data(), regionSize)) {
             continue;
-
-        Gui::log("{}: Scanning region {} - {}", name, start, end);
-
-        for (uint64_t i = 0; i < regionSize; i += fastScanOffset) {
-            if (cmp((char*)memory + i)) {
-                if (matchingAddresses * valueBytes.size() >= latestValuesSize) {
-                    latestValuesSize *= 2;
-                    latestValues = realloc(latestValues, latestValuesSize * valueBytes.size());
-                    if (!latestValues) {
-                        free(memory);
-                        Gui::log("{}: Out of memory", name);
-                        return;
-                    }
-                }
-
-                addresses.emplace_back((char*)start + i);
-                memcpy((char*)latestValues + matchingAddresses * valueBytes.size(), (char*)memory + i, valueBytes.size());
+        }
+        
+        Gui::log("{}: Scanning region {:p} - {:p}", name, start, end);
+        
+        for (size_t i = 0; i + valueBytes.size() <= regionSize; i += fastScanOffset) {
+            if (cmp(memory.data() + i)) {
+                const uintptr_t address = reinterpret_cast<uintptr_t>(start) + i;
+                newAddresses.push_back(address);
+                
+                // Store latest value
+                newLatestValues.insert(newLatestValues.end(), 
+                                      memory.data() + i, 
+                                      memory.data() + i + valueBytes.size());
                 matchingAddresses++;
             }
-            scannedAddresses++;
+            scannedAddresses.fetch_add(1, std::memory_order_relaxed);
         }
     }
-
-    free(memory);
-
-    Gui::log("{}: Scan completed, {} addresses scanned, {} match", name, scannedAddresses, matchingAddresses);
-
-    totalAddresses = matchingAddresses;
-    scannedAddresses = totalAddresses;
-
-    addresses.resize(totalAddresses);
-    addresses.shrink_to_fit();
-    latestValues = realloc(latestValues, matchingAddresses * valueBytes.size());
-
-    if (shouldSuspendWhileScanning and !wasAttachedProgram)
-        SelectedProcess::resume();
-    isScanRunning = false;
-    isReset = false;
+    
+    Gui::log("{}: Scan completed, {} addresses scanned, {} match", 
+             name, scannedAddresses.load(), matchingAddresses);
+    
+    // Update state
+    addresses = std::move(newAddresses);
+    latestValues = std::move(newLatestValues);
+    totalAddresses.store(matchingAddresses, std::memory_order_release);
+    scannedAddresses.store(matchingAddresses, std::memory_order_release);
+    
+    isReset.store(false, std::memory_order_release);
+    isScanRunning.store(false, std::memory_order_release);
 }
 
-
-void Scanner::nextScan(const std::function<bool(void*)> cmp) {
-    const bool wasSuspended = SelectedProcess::isSuspended();
-    if (shouldSuspendWhileScanning and !SelectedProcess::pid)
-        SelectedProcess::suspend();
-
+void Scanner::performNextScan(std::function<bool(const void*)> cmp) {
+    ProcessSuspensionGuard guard(shouldSuspendWhileScanning);
+    
+    std::lock_guard<std::mutex> lock(scanMutex);
+    
     regions.parse();
-
-    unsigned long long resAddrI = 0;
-    unsigned long long matchingAddresses = 0;
-
-    void* memory = malloc(regions.largestRegionSize);
-
-    for (auto& [start, end, mode, offset, device, inodeID, fname]: regions.regions) {
-        if (const unsigned long long regionSize = (char*)end - (char*)start; !VirtualMemory::read(start, memory, regionSize))
+    
+    uint64_t resAddrIdx = 0;
+    uint64_t matchingAddresses = 0;
+    uint64_t currentScanIdx = 0;
+    
+    std::vector<uintptr_t> newAddresses;
+    std::vector<uint8_t> newLatestValues;
+    newAddresses.reserve(addresses.size());
+    newLatestValues.reserve(latestValues.size());
+    
+    std::vector<uint8_t> memory(regions.largestRegionSize);
+    
+    for (const auto& [start, end, mode, offset, device, inodeID, fname] : regions.regions) {
+        const size_t regionSize = static_cast<const uint8_t*>(end) - 
+                                 static_cast<const uint8_t*>(start);
+        
+        if (!VirtualMemory::read(start, memory.data(), regionSize)) {
             continue;
-
-
-        Gui::log("{}: Scanning region {} - {}", name, start, end);
-
-        // Bounds check before accessing addresses
-        if (scannedAddresses >= addresses.size())
-            break;
+        }
+        
+        Gui::log("{}: Scanning region {:p} - {:p}", name, start, end);
+        
+        const uintptr_t regionStart = reinterpret_cast<uintptr_t>(start);
+        const uintptr_t regionEnd = reinterpret_cast<uintptr_t>(end) - valueBytes.size();
+        
+        // Skip addresses before this region
+        while (currentScanIdx < addresses.size() && addresses[currentScanIdx] < regionStart) {
+            currentScanIdx++;
+        }
+        
+        // Scan addresses in this region
+        while (currentScanIdx < addresses.size() && addresses[currentScanIdx] <= regionEnd) {
+            const uintptr_t addr = addresses[currentScanIdx];
+            const size_t offsetInRegion = addr - regionStart;
             
-        if (addresses[scannedAddresses] < start)
-            continue;
-
-
-        while (scannedAddresses < addresses.size() and addresses[scannedAddresses] <= (char*)end - valueBytes.size()) {
-            if (cmp((char*)memory + ((char*)addresses[scannedAddresses] - (char*)start))) {
-                addresses[resAddrI] = addresses[scannedAddresses];
-                memcpy((char*)latestValues + resAddrI++ * valueBytes.size(), (char*)memory + ((char*)addresses[scannedAddresses] - (char*)start), valueBytes.size());
-                matchingAddresses++;
+            if (offsetInRegion + valueBytes.size() <= regionSize) {
+                if (cmp(memory.data() + offsetInRegion)) {
+                    newAddresses.push_back(addr);
+                    newLatestValues.insert(newLatestValues.end(),
+                                          memory.data() + offsetInRegion,
+                                          memory.data() + offsetInRegion + valueBytes.size());
+                    matchingAddresses++;
+                }
             }
-            scannedAddresses++;
+            
+            currentScanIdx++;
+            scannedAddresses.fetch_add(1, std::memory_order_relaxed);
         }
     }
-
-    free(memory);
-
-    Gui::log("{}: Scan completed, {} addresses scanned, {} match", name, scannedAddresses, matchingAddresses);
-
-    totalAddresses = matchingAddresses;
-    scannedAddresses = totalAddresses;
-
-    addresses.resize(totalAddresses);
-    addresses.shrink_to_fit();
-    latestValues = realloc(latestValues, matchingAddresses * valueBytes.size());
-
-    if (shouldSuspendWhileScanning and !wasSuspended)
-        SelectedProcess::resume();
-    isScanRunning = false;
+    
+    Gui::log("{}: Scan completed, {} addresses scanned, {} match", 
+             name, scannedAddresses.load(), matchingAddresses);
+    
+    // Update state
+    addresses = std::move(newAddresses);
+    latestValues = std::move(newLatestValues);
+    totalAddresses.store(matchingAddresses, std::memory_order_release);
+    scannedAddresses.store(matchingAddresses, std::memory_order_release);
+    
+    isScanRunning.store(false, std::memory_order_release);
 }
-
 
 void Scanner::reset() {
-    valueBytes = std::vector<uint8_t>(32);
-    valueBytesSecond = std::vector<uint8_t>(32);
+    std::lock_guard<std::mutex> lock(scanMutex);
+    
     valueBytes.clear();
     valueBytesSecond.clear();
     valueMask.clear();
-    latestValues = realloc(latestValues, 65535);
-    latestValuesSize = 65535;
-    addresses = std::vector<void*>();
-    totalAddresses = 0;
-    scannedAddresses = 0;
+    addresses.clear();
+    latestValues.clear();
+    
+    totalAddresses.store(0, std::memory_order_release);
+    scannedAddresses.store(0, std::memory_order_release);
     isAutonextEnabled = false;
-    isReset = true;
-    scanType = equal;
+    isReset.store(true, std::memory_order_release);
+    scanType = ScanType::Equal;
     regions = Regions();
-}
-
-
-Scanner::~Scanner() {
-    free(latestValues);
+    
+    Gui::log("{}: Scanner reset", name);
 }

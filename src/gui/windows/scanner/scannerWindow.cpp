@@ -11,45 +11,54 @@
 #include <iostream>
 
 void ScannerWindow::scanControls() {
-    const bool isScanRunning = scanner.isScanRunning;
-    const bool isScannerReset = scanner.isReset;
+    const bool isScanRunning = scanner.isRunning();
+    const bool isScannerReset = scanner.hasBeenReset();
 
     if (isScanRunning)
         ImGui::BeginDisabled();
 
     ImGui::BeginGroup();
-    const bool shouldDisable = scanner.scanType == unchanged or scanner.scanType == changed or scanner.scanType == unknown or scanner.scanType == increased or scanner.scanType == decreased;
+    const ScanType type = scanner.getScanType();
+    const bool shouldDisable = type == ScanType::Unchanged || 
+                              type == ScanType::Changed || 
+                              type == ScanType::Unknown || 
+                              type == ScanType::Increased || 
+                              type == ScanType::Decreased;
 
     if (shouldDisable)
         ImGui::BeginDisabled(true);
-    if (scanner.scanType == range) {
+    if (scanner.getScanType() == ScanType::Range) {
         ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 4 - ImGui::GetStyle().FramePadding.x);
-        Widgets::valueInputTrueOnEditing(scanner.valueType, scanner.valueBytes.data());
+        Widgets::valueInputTrueOnEditing(scanner.getValueType(), scanner.getValueBytesRef().data());
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 4 - ImGui::GetStyle().FramePadding.x);
-        Widgets::valueInputTrueOnEditing(scanner.valueType, scanner.valueBytesSecond.data());
-    } else if (scanner.valueType.type == byteArray) {
+        Widgets::valueInputTrueOnEditing(scanner.getValueType(), scanner.getValueBytesSecondRef().data());
+    } else if (scanner.getValueType().type == byteArray) {
         // AOB uses text input for hex pattern
         ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 2);
         ImGui::InputTextWithHint("##AOBInput", "48 8B ?? 00 AA", aobInputBuffer, sizeof(aobInputBuffer));
     } else {
         ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 2);
-        Widgets::valueInputTrueOnEditing(scanner.valueType, scanner.valueBytes.data(), 256);
+        Widgets::valueInputTrueOnEditing(scanner.getValueType(), scanner.getValueBytesRef().data(), 256);
     }
     if (shouldDisable)
         ImGui::EndDisabled();
 
-    if (scanner.isReset) {
+    if (scanner.hasBeenReset()) {
         if (ImGui::Button("New")) {
             // Handle AOB parsing before scan
-            if (scanner.valueType.type == byteArray) {
+            if (scanner.getValueType().type == byteArray) {
                 auto parseResult = ParseAOBString(aobInputBuffer);
                 if (parseResult.success) {
-                    scanner.valueBytes = parseResult.bytes;
-                    scanner.valueMask = parseResult.mask;
-                    scanner.valueType.stringLength = parseResult.bytes.size();
-                    scanner.fastScanOffset = 1;  // Force byte-aligned scanning for AOB
-                    scanner.scanType = equal;    // AOB only supports equal
+                    scanner.setValue(parseResult.bytes);
+                    scanner.setValueMask(parseResult.mask);
+                    
+                    auto vt = scanner.getValueType();
+                    vt.stringLength = parseResult.bytes.size();
+                    scanner.setValueType(vt);
+                    
+                    scanner.setFastScanOffset(1);  // Force byte-aligned scanning for AOB
+                    scanner.setScanType(ScanType::Equal);    // AOB only supports equal
                     scanner.newScan();
                 } else {
                     Gui::log("AOB Parse Error: {}", parseResult.errorMessage);
@@ -70,8 +79,11 @@ void ScannerWindow::scanControls() {
             ImGui::EndDisabled();
 
         ImGui::SameLine();
-        ImGui::Checkbox("auto", &scanner.isAutonextEnabled);
-        if (scanner.isAutonextEnabled and !scanner.isScanRunning)
+        bool autoNext = scanner.getIsAutonextEnabled();
+        if (ImGui::Checkbox("auto", &autoNext))
+            scanner.setIsAutonextEnabled(autoNext);
+            
+        if (scanner.getIsAutonextEnabled() and !scanner.isRunning())
             scanner.nextScan();
 
         if (isScanRunning)
@@ -86,64 +98,99 @@ void ScannerWindow::scanControls() {
         ImGui::BeginDisabled();
 
     ImGui::SetNextItemWidth(-1);
-    Widgets::valueTypeSelector(scanner.valueType, false);
-    scanner.valueType.stringLength = 256;
-    scanner.valueBytes.resize(scanner.valueType.getSize());
-    scanner.valueBytesSecond.resize(scanner.valueType.getSize());
+    
+    // Modify valueType
+    {
+        auto vt = scanner.getValueType();
+        Widgets::valueTypeSelector(vt, false);
+        vt.stringLength = 256;
+        scanner.setValueType(vt);
+    }
+    
+    scanner.getValueBytesRef().resize(scanner.getValueType().getSize());
+    scanner.getValueBytesSecondRef().resize(scanner.getValueType().getSize());
 
     if (!isScannerReset)
         ImGui::EndDisabled();
 
     ImGui::SetNextItemWidth(-1);
     if (isScannerReset) {
-        if (scanner.valueType.type == string) {
-            constexpr std::array indexMapping{equal, unknown};
+        if (scanner.getValueType().type == string) {
+            constexpr std::array indexMapping{ScanType::Equal, ScanType::Unknown};
             const char* items[]{"Equal", "Unknown"};
-            int currentItem;
+            int currentItem = 0;
             for (int i = 0; i < 2; ++i)
-                if (indexMapping[i] == scanner.scanType)
+                if (indexMapping[i] == scanner.getScanType())
                     currentItem = i;
 
             if ((unsigned)currentItem > 2) {
                 currentItem = 0;
-                scanner.scanType = equal;
-            } else if (indexMapping[currentItem] != scanner.scanType) {
-                scanner.scanType = equal;
+                scanner.setScanType(ScanType::Equal);
+            } else if (indexMapping[currentItem] != scanner.getScanType()) {
+                scanner.setScanType(ScanType::Equal);
             }
             if (ImGui::Combo("##My Combo", &currentItem, items, IM_ARRAYSIZE(items)))
-                scanner.scanType = indexMapping[currentItem];
-        } else if (scanner.valueType.type == byteArray) {
+                scanner.setScanType(indexMapping[currentItem]);
+        } else if (scanner.getValueType().type == byteArray) {
             // AOB only supports Equal scan type
-            scanner.scanType = equal;
+            scanner.setScanType(ScanType::Equal);
             ImGui::BeginDisabled();
             int dummy = 0;
             const char* items[]{"Equal"};
             ImGui::Combo("##AOB Scan Type", &dummy, items, 1);
             ImGui::EndDisabled();
         } else {
-            constexpr std::array indexMapping{equal, bigger, smaller, range, unknown};
+            constexpr std::array indexMapping{ScanType::Equal, ScanType::Bigger, ScanType::Smaller, ScanType::Range, ScanType::Unknown};
             const char* items[]{"Equal", "Bigger than", "Smaller than", "Range", "Unknown"};
-            int currentItem;
+            int currentItem = 0;
             for (int i = 0; i < 5; ++i)
-                if (indexMapping[i] == scanner.scanType)
+                if (indexMapping[i] == scanner.getScanType())
                     currentItem = i;
             if (ImGui::Combo("##My Combo", &currentItem, items, IM_ARRAYSIZE(items)))
-                scanner.scanType = indexMapping[currentItem];
+                scanner.setScanType(indexMapping[currentItem]);
         }
     } else {
-        if (scanner.scanType >= 10)
-            scanner.scanType = equal;
-        if (scanner.valueType.type == string)
-            ImGui::Combo("##scanner_scan_type", (int*)&scanner.scanType, "Equal\0Changed\0Unchanged\0\0");
-        else if (scanner.valueType.type == byteArray) {
+        if (scanner.getScanType() >= ScanType::Unknown)
+             scanner.setScanType(ScanType::Equal);
+             
+        // Safe casting for combo box not possible directly with enum class, need manual mapping or assumption
+        // Assuming the order matches for simple cases, but since ScanType is enum class, we can't just cast address.
+        // We must use a local int.
+        
+        int currentType = (int)scanner.getScanType();
+        
+        if (scanner.getValueType().type == string) {
+            // "Equal\0Changed\0Unchanged\0\0" -> 0, 8, 9 ? No.
+            // Combo returns index 0, 1, 2.
+            // Mapping: 0->Equal, 1->Changed, 2->Unchanged.
+            int item = 0;
+            if (scanner.getScanType() == ScanType::Changed) item = 1;
+            else if (scanner.getScanType() == ScanType::Unchanged) item = 2;
+            
+            if (ImGui::Combo("##scanner_scan_type", &item, "Equal\0Changed\0Unchanged\0\0")) {
+                if (item == 0) scanner.setScanType(ScanType::Equal);
+                else if (item == 1) scanner.setScanType(ScanType::Changed);
+                else if (item == 2) scanner.setScanType(ScanType::Unchanged);
+            }
+        }
+        else if (scanner.getValueType().type == byteArray) {
             // AOB only supports Equal
-            scanner.scanType = equal;
+            scanner.setScanType(ScanType::Equal);
             ImGui::BeginDisabled();
             int dummy = 0;
             ImGui::Combo("##scanner_scan_type", &dummy, "Equal\0\0");
             ImGui::EndDisabled();
-        } else
-            ImGui::Combo("##scanner_scan_type", (int*)&scanner.scanType, "Equal\0Bigger than\0Smaller than\0Range\0Increased\0Increased by\0Decreased\0Decreased by\0Changed\0Unchanged\0\0");
+        } else {
+             // "Equal\0Bigger than\0Smaller than\0Range\0Increased\0Increased by\0Decreased\0Decreased by\0Changed\0Unchanged\0\0"
+             // Indices match ScanType order?
+             // Equal=0, Bigger=1, Smaller=2, Range=3, Increased=4, IncreasedBy=5, Decreased=6, DecreasedBy=7, Changed=8, Unchanged=9.
+             // ScanType enum: Equal, Bigger, Smaller, Range, Increased, IncreasedBy, Decreased, DecreasedBy, Changed, Unchanged, Unknown.
+             // The order matches perfectly!
+             
+             if (ImGui::Combo("##scanner_scan_type", &currentType, "Equal\0Bigger than\0Smaller than\0Range\0Increased\0Increased by\0Decreased\0Decreased by\0Changed\0Unchanged\0\0")) {
+                 scanner.setScanType((ScanType)currentType);
+             }
+        }
     }
 
     ImGui::EndGroup();
@@ -163,21 +210,29 @@ void ScannerWindow::scanControls() {
         ImGui::SetNextItemWidth(40);
         if (!isScannerReset)
             ImGui::BeginDisabled(true);
-        ImGui::InputScalar("Fast scan offset", ImGuiDataType_U32, &scanner.fastScanOffset);
+        unsigned fOffset = scanner.getFastScanOffset();
+        if (ImGui::InputScalar("Fast scan offset", ImGuiDataType_U32, &fOffset))
+            scanner.setFastScanOffset(fOffset);
         if (!isScannerReset)
             ImGui::EndDisabled();
-        ImGui::Checkbox("Suspend while scanning", &scanner.shouldSuspendWhileScanning);
+            
+        bool suspend = scanner.getShouldSuspendWhileScanning();
+        if (ImGui::Checkbox("Suspend while scanning", &suspend))
+             scanner.setShouldSuspendWhileScanning(suspend);
+             
         ImGui::TreePop();
     }
-    scanner.regions.mustHavePerms = regionPermR == 2 ? RegionPerms(scanner.regions.mustHavePerms | r) : RegionPerms(scanner.regions.mustHavePerms & ~r);
-    scanner.regions.mustHavePerms = regionPermW == 2 ? RegionPerms(scanner.regions.mustHavePerms | w) : RegionPerms(scanner.regions.mustHavePerms & ~w);
-    scanner.regions.mustHavePerms = regionPermX == 2 ? RegionPerms(scanner.regions.mustHavePerms | x) : RegionPerms(scanner.regions.mustHavePerms & ~x);
-    scanner.regions.mustHavePerms = regionPermP == 2 ? RegionPerms(scanner.regions.mustHavePerms | p) : RegionPerms(scanner.regions.mustHavePerms & ~p);
+    
+    auto& regions = scanner.getRegions();
+    regions.mustHavePerms = regionPermR == 2 ? RegionPerms(regions.mustHavePerms | r) : RegionPerms(regions.mustHavePerms & ~r);
+    regions.mustHavePerms = regionPermW == 2 ? RegionPerms(regions.mustHavePerms | w) : RegionPerms(regions.mustHavePerms & ~w);
+    regions.mustHavePerms = regionPermX == 2 ? RegionPerms(regions.mustHavePerms | x) : RegionPerms(regions.mustHavePerms & ~x);
+    regions.mustHavePerms = regionPermP == 2 ? RegionPerms(regions.mustHavePerms | p) : RegionPerms(regions.mustHavePerms & ~p);
 
-    scanner.regions.mustNotHavePerms = regionPermR == 0 ? RegionPerms(scanner.regions.mustNotHavePerms | r) : RegionPerms(scanner.regions.mustNotHavePerms & ~r);
-    scanner.regions.mustNotHavePerms = regionPermW == 0 ? RegionPerms(scanner.regions.mustNotHavePerms | w) : RegionPerms(scanner.regions.mustNotHavePerms & ~w);
-    scanner.regions.mustNotHavePerms = regionPermX == 0 ? RegionPerms(scanner.regions.mustNotHavePerms | x) : RegionPerms(scanner.regions.mustNotHavePerms & ~x);
-    scanner.regions.mustNotHavePerms = regionPermP == 0 ? RegionPerms(scanner.regions.mustNotHavePerms | p) : RegionPerms(scanner.regions.mustNotHavePerms & ~p);
+    regions.mustNotHavePerms = regionPermR == 0 ? RegionPerms(regions.mustNotHavePerms | r) : RegionPerms(regions.mustNotHavePerms & ~r);
+    regions.mustNotHavePerms = regionPermW == 0 ? RegionPerms(regions.mustNotHavePerms | w) : RegionPerms(regions.mustNotHavePerms & ~w);
+    regions.mustNotHavePerms = regionPermX == 0 ? RegionPerms(regions.mustNotHavePerms | x) : RegionPerms(regions.mustNotHavePerms & ~x);
+    regions.mustNotHavePerms = regionPermP == 0 ? RegionPerms(regions.mustNotHavePerms | p) : RegionPerms(regions.mustNotHavePerms & ~p);
 
 
     if (isScanRunning)
@@ -187,26 +242,30 @@ void ScannerWindow::scanControls() {
 
     if (isScannerReset)
         ImGui::BeginDisabled(true);
-    char buf[32];
-    sprintf(buf, "%llu/%llu", scanner.scannedAddresses, scanner.totalAddresses);
-    const float progress = scanner.scannedAddresses == 0 ? 0.0 : (float)scanner.scannedAddresses / scanner.totalAddresses;
+    char buf[64];
+    sprintf(buf, "%llu/%llu", scanner.getScannedAddresses(), scanner.getTotalAddresses());
+    const float progress = scanner.getScannedAddresses() == 0 ? 0.0 : (float)scanner.getScannedAddresses() / scanner.getTotalAddresses();
     ImGui::ProgressBar(progress, ImVec2(-(ImGui::CalcTextSize("Add all").x + ImGui::GetStyle().FramePadding.x * 2 + ImGui::GetStyle().ItemSpacing.x), 0.0f), buf);
 
     ImGui::SameLine();
     if (ImGui::Button("Add all")) {
         const auto starredAddressesWindow = Gui::getWindows<StarredAddressesWindow>().front();
-        for (const auto row: scanner.addresses)
-            starredAddressesWindow->addAddress("New address", row, scanner.valueType);
+        const auto addresses = scanner.getAddresses();
+        for (const auto row: addresses)
+            starredAddressesWindow->addAddress("New address", (void*)row, scanner.getValueType());
     }
     if (isScannerReset)
         ImGui::EndDisabled();
 }
 
 void ScannerWindow::scanResults() {
-    if (scanner.isScanRunning)
+    if (scanner.isRunning())
         return;
-    if (scanner.addresses.empty())
+        
+    const auto addresses = scanner.getAddresses();
+    if (addresses.empty())
         return;
+        
     if (ImGui::BeginTable("CurrentAddresses", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("Address");
@@ -215,14 +274,19 @@ void ScannerWindow::scanResults() {
         ImGui::TableHeadersRow();
 
         static std::vector<char> currentRowAddressValueBytes;
-        currentRowAddressValueBytes.resize(scanner.valueBytes.size());
+        currentRowAddressValueBytes.resize(scanner.getValueBytesRef().size());
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
         ImGuiListClipper clipper;
         // Use addresses.size() to avoid out of bounds access
-        const size_t addrSize = scanner.addresses.size();
+        const size_t addrSize = addresses.size();
         const int displayCount = static_cast<int>(addrSize);
         clipper.Begin(displayCount);
+        
+        // Fetch values for display
+        const auto latestValues = scanner.getLatestValues();
+        const size_t valueSize = scanner.getValueBytesRef().size();
+        
         while (clipper.Step()) {
             for (int row = clipper.DisplayStart; row < clipper.DisplayEnd && static_cast<size_t>(row) < addrSize; row++) {
                 ImGui::TableNextRow();
@@ -231,14 +295,15 @@ void ScannerWindow::scanResults() {
                 ImGui::AlignTextToFramePadding();
                 
                 // Bounds check before accessing addresses
-                if (static_cast<size_t>(row) >= scanner.addresses.size()) {
+                if (static_cast<size_t>(row) >= addrSize) {
                     ImGui::PopID();
                     break;
                 }
                 
-                void* currentAddr = scanner.addresses[row];
+                // Address is uintptr_t in vector, need casting if needed or void*
+                void* currentAddr = (void*)addresses[row];
                 
-                if (scanner.regions.isStaticAddress(currentAddr)) {
+                if (scanner.getRegions().isStaticAddress(currentAddr)) {
                     ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%p", currentAddr);
                 } else {
                     ImGui::Text("%p", currentAddr);
@@ -251,14 +316,16 @@ void ScannerWindow::scanResults() {
 
                 VirtualMemory::read(currentAddr, currentRowAddressValueBytes.data(), currentRowAddressValueBytes.size());
 
-                if (Widgets::valueInputTrueOnDeactivation(scanner.valueType, currentRowAddressValueBytes.data())) {
+                if (Widgets::valueInputTrueOnDeactivation(scanner.getValueType(), currentRowAddressValueBytes.data())) {
                     if (VirtualMemory::write(currentRowAddressValueBytes.data(), currentAddr, currentRowAddressValueBytes.size()))
-                        Gui::log("Wrote {} to {:p}", scanner.valueType.format(currentRowAddressValueBytes.data(), false), currentAddr);
+                        Gui::log("Wrote {} to {:p}", scanner.getValueType().format(currentRowAddressValueBytes.data(), false), currentAddr);
                 }
 
 
                 ImGui::TableNextColumn();
-                Widgets::valueText(scanner.valueType, (char*)scanner.latestValues + row * scanner.valueBytes.size());
+                if (valueSize > 0 && (row * valueSize < latestValues.size())) {
+                    Widgets::valueText(scanner.getValueType(), (char*)latestValues.data() + row * valueSize);
+                }
 
 
                 ImGui::AlignTextToFramePadding();
@@ -270,7 +337,7 @@ void ScannerWindow::scanResults() {
                     if (ImGui::BeginMenu("Add to starred")) {
                         for (const auto starredAddressesWindow: Gui::getWindows<StarredAddressesWindow>()) {
                             if (ImGui::MenuItem(starredAddressesWindow->name.c_str()))
-                                starredAddressesWindow->addAddress("New address", currentAddr, scanner.valueType);
+                                starredAddressesWindow->addAddress("New address", currentAddr, scanner.getValueType());
                         }
 
                         ImGui::EndMenu();
@@ -280,7 +347,7 @@ void ScannerWindow::scanResults() {
 
                 if (ImGui::IsItemHovered() and ImGui::IsMouseDoubleClicked(0)) {
                     for (const auto starredAddressesWindow: Gui::getWindows<StarredAddressesWindow>()) {
-                        starredAddressesWindow->addAddress("New address", currentAddr, scanner.valueType);
+                        starredAddressesWindow->addAddress("New address", currentAddr, scanner.getValueType());
                         break;
                     }
                 }
