@@ -183,6 +183,7 @@ void DisassemblerWindow::drawTable() {
                 if (isPatched) {
                     if (ImGui::MenuItem("Restore Original Code")) {
                         PatchManager::restorePatch((void*)line.address);
+                        refreshInstructions();
                     }
                 } else {
                     if (ImGui::MenuItem("NOP Instruction")) {
@@ -192,6 +193,18 @@ void DisassemblerWindow::drawTable() {
                         }
                         PatchManager::nopInstruction((void*)line.address, line.length, line.fullText);
                         refreshInstructions();
+                    }
+                    
+                    // Invert Jump option - only for conditional jumps
+                    if (line.isConditional) {
+                        if (ImGui::MenuItem("Invert Jump (jz<->jnz, etc.)")) {
+                            if (AccessTracker::isTracking()) {
+                                AccessTracker::stopTracking();
+                                Gui::log("Access Tracker stopped for safe patching.");
+                            }
+                            PatchManager::invertConditionalJump((void*)line.address, line.length, line.fullText);
+                            refreshInstructions();
+                        }
                     }
                 }
                 ImGui::EndPopup();
