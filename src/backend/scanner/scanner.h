@@ -53,6 +53,8 @@ private:
     unsigned fastScanOffset = 4;
     bool shouldSuspendWhileScanning = false;
     bool isAutonextEnabled = false;
+    bool isLiveScan = false;
+    std::atomic<bool> shouldCancelScan{false};
     
     // Scan data
     std::vector<uint8_t> valueBytes;
@@ -153,6 +155,16 @@ public:
     
     void setIsAutonextEnabled(bool enabled) { 
         isAutonextEnabled = enabled; 
+    }
+
+    void setLiveScan(bool enabled) {
+        isLiveScan = enabled;
+    }
+    
+    bool getLiveScan() const { return isLiveScan; }
+    
+    void cancelScan() {
+        shouldCancelScan.store(true, std::memory_order_release);
     }
     
     // Value configuration - return pointers for direct modification

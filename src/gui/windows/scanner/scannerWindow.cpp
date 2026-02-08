@@ -5,6 +5,7 @@
 #include "../../gui.h"
 #include "../memoryEditor/memoryEditorWindow.h"
 #include "../starredAddresses/starredAddressesWindow.h"
+#include "../../../backend/disassembler/disassembler.h"
 
 #include <imgui.h>
 #include <format>
@@ -14,10 +15,10 @@ void ScannerWindow::scanControls() {
     const bool isScanRunning = scanner.isRunning();
     const bool isScannerReset = scanner.hasBeenReset();
 
+    ImGui::BeginGroup();
+
     if (isScanRunning)
         ImGui::BeginDisabled();
-
-    ImGui::BeginGroup();
     const ScanType type = scanner.getScanType();
     const bool shouldDisable = type == ScanType::Unchanged || 
                               type == ScanType::Changed || 
@@ -44,7 +45,11 @@ void ScannerWindow::scanControls() {
     if (shouldDisable)
         ImGui::EndDisabled();
 
+    if (isScanRunning)
+        ImGui::EndDisabled();
+
     if (scanner.hasBeenReset()) {
+        if (isScanRunning) ImGui::BeginDisabled();
         if (ImGui::Button("New")) {
             // Handle AOB parsing before scan
             if (scanner.getValueType().type == byteArray) {
@@ -67,16 +72,32 @@ void ScannerWindow::scanControls() {
                 scanner.newScan();
             }
         }
+        
+        ImGui::SameLine();
+        bool liveScan = scanner.getLiveScan();
+        if (ImGui::Checkbox("Live", &liveScan))
+            scanner.setLiveScan(liveScan);
+        if (ImGui::IsItemHovered())
+             ImGui::SetTooltip("Keep scanning until result found (Good for JIT/Late loading)");
+
+        if (isScanRunning) ImGui::EndDisabled();
+        
+        if (isScanRunning) {
+            ImGui::SameLine();
+            if (ImGui::Button("Stop"))
+                scanner.cancelScan();
+        }
     } else {
+        if (isScanRunning) ImGui::BeginDisabled();
+        
         if (ImGui::Button("Reset"))
             scanner.reset();
 
         ImGui::SameLine();
         if (ImGui::Button("Next"))
             scanner.nextScan();
-
-        if (isScanRunning)
-            ImGui::EndDisabled();
+            
+        if (isScanRunning) ImGui::EndDisabled();
 
         ImGui::SameLine();
         bool autoNext = scanner.getIsAutonextEnabled();
@@ -85,9 +106,12 @@ void ScannerWindow::scanControls() {
             
         if (scanner.getIsAutonextEnabled() and !scanner.isRunning())
             scanner.nextScan();
-
-        if (isScanRunning)
-            ImGui::BeginDisabled(true);
+            
+        if (isScanRunning) {
+            ImGui::SameLine();
+            if (ImGui::Button("Stop"))
+                scanner.cancelScan();
+        }
     }
 
     ImGui::EndGroup();
@@ -235,8 +259,7 @@ void ScannerWindow::scanControls() {
     regions.mustNotHavePerms = regionPermP == 0 ? RegionPerms(regions.mustNotHavePerms | p) : RegionPerms(regions.mustNotHavePerms & ~p);
 
 
-    if (isScanRunning)
-        ImGui::EndDisabled();
+
 
     ImGui::NewLine();
 
@@ -342,6 +365,27 @@ void ScannerWindow::scanResults() {
 
                         ImGui::EndMenu();
                     }
+                    
+                    if (ImGui::Selectable("Copy Wildcard AOB")) {
+                        uint8_t buffer[16];
+                        if (VirtualMemory::read(currentAddr, buffer, 16)) {
+                            auto [bytes, mask] = Disassembler::createWildcardAOB(buffer, 16, (uint64_t)currentAddr);
+                            if (!bytes.empty()) {
+                                std::string aob;
+                                for(size_t i=0; i<bytes.size(); ++i) {
+                                    if (mask[i] == 0x00) {
+                                        aob += "?? ";
+                                    } else {
+                                        aob += std::format("{:02X} ", bytes[i]);
+                                    }
+                                }
+                                if (!aob.empty()) aob.pop_back();
+                                ImGui::SetClipboardText(aob.c_str());
+                                Gui::log("Copied Wildcard AOB: {}", aob);
+                            }
+                        }
+                    }
+
                     ImGui::EndPopup();
                 }
 

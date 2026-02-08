@@ -29,6 +29,10 @@ namespace Disassembler {
     
     // Create NOP bytes of specified length
     std::vector<uint8_t> createNOP(size_t length);
+
+    // Create AOB pattern with wildcards for relative offsets
+    // Returns pair of (bytes, mask) where mask has 0x00 for wildcards
+    std::pair<std::vector<uint8_t>, std::vector<uint8_t>> createWildcardAOB(const uint8_t* bytes, size_t size, uint64_t address);
 }
 
 #endif //HEX_SCAN_DISASSEMBLER_H

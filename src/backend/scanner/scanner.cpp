@@ -267,14 +267,26 @@ void Scanner::newScan() {
     
     isScanRunning.store(true, std::memory_order_release);
     scannedAddresses.store(0, std::memory_order_release);
+    shouldCancelScan.store(false, std::memory_order_release);
     
     std::thread([this]() {
         try {
-            performNewScan(getTypeSpecificComparator());
+            do {
+                if (shouldCancelScan.load(std::memory_order_acquire)) break;
+
+                performNewScan(getTypeSpecificComparator());
+
+                if (!addresses.empty()) break;
+                if (!isLiveScan) break;
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            } while (isLiveScan && !shouldCancelScan.load(std::memory_order_acquire));
+
         } catch (const std::exception& e) {
             Gui::log("{}: Error during scan: {}", name, e.what());
-            isScanRunning.store(false, std::memory_order_release);
         }
+        isScanRunning.store(false, std::memory_order_release);
     }).detach();
 }
 
@@ -289,14 +301,15 @@ void Scanner::nextScan() {
     
     isScanRunning.store(true, std::memory_order_release);
     scannedAddresses.store(0, std::memory_order_release);
+    shouldCancelScan.store(false, std::memory_order_release);
     
     std::thread([this]() {
         try {
             performNextScan(getTypeSpecificComparator());
         } catch (const std::exception& e) {
             Gui::log("{}: Error during scan: {}", name, e.what());
-            isScanRunning.store(false, std::memory_order_release);
         }
+        isScanRunning.store(false, std::memory_order_release);
     }).detach();
 }
 
@@ -328,6 +341,8 @@ void Scanner::performNewScan(std::function<bool(const void*)> cmp) {
     std::vector<uint8_t> memory(regions.largestRegionSize);
     
     for (const auto& [start, end, mode, offset, device, inodeID, fname] : regions.regions) {
+        if (shouldCancelScan.load(std::memory_order_acquire)) break;
+
         const size_t regionSize = static_cast<const uint8_t*>(end) - 
                                  static_cast<const uint8_t*>(start);
         
@@ -338,6 +353,8 @@ void Scanner::performNewScan(std::function<bool(const void*)> cmp) {
         Gui::log("{}: Scanning region {:p} - {:p}", name, start, end);
         
         for (size_t i = 0; i + valueBytes.size() <= regionSize; i += fastScanOffset) {
+            if ((i & 0xFFF) == 0 && shouldCancelScan.load(std::memory_order_relaxed)) break;
+
             if (cmp(memory.data() + i)) {
                 const uintptr_t address = reinterpret_cast<uintptr_t>(start) + i;
                 newAddresses.push_back(address);
@@ -362,7 +379,6 @@ void Scanner::performNewScan(std::function<bool(const void*)> cmp) {
     scannedAddresses.store(matchingAddresses, std::memory_order_release);
     
     isReset.store(false, std::memory_order_release);
-    isScanRunning.store(false, std::memory_order_release);
 }
 
 void Scanner::performNextScan(std::function<bool(const void*)> cmp) {
@@ -384,6 +400,8 @@ void Scanner::performNextScan(std::function<bool(const void*)> cmp) {
     std::vector<uint8_t> memory(regions.largestRegionSize);
     
     for (const auto& [start, end, mode, offset, device, inodeID, fname] : regions.regions) {
+        if (shouldCancelScan.load(std::memory_order_acquire)) break;
+
         const size_t regionSize = static_cast<const uint8_t*>(end) - 
                                  static_cast<const uint8_t*>(start);
         
@@ -403,6 +421,8 @@ void Scanner::performNextScan(std::function<bool(const void*)> cmp) {
         
         // Scan addresses in this region
         while (currentScanIdx < addresses.size() && addresses[currentScanIdx] <= regionEnd) {
+            if (shouldCancelScan.load(std::memory_order_acquire)) break;
+
             const uintptr_t addr = addresses[currentScanIdx];
             const size_t offsetInRegion = addr - regionStart;
             
@@ -429,8 +449,6 @@ void Scanner::performNextScan(std::function<bool(const void*)> cmp) {
     latestValues = std::move(newLatestValues);
     totalAddresses.store(matchingAddresses, std::memory_order_release);
     scannedAddresses.store(matchingAddresses, std::memory_order_release);
-    
-    isScanRunning.store(false, std::memory_order_release);
 }
 
 void Scanner::reset() {

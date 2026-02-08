@@ -99,4 +99,75 @@ namespace Disassembler {
     std::vector<uint8_t> createNOP(size_t length) {
         return std::vector<uint8_t>(length, NOP_BYTE);
     }
+    
+    std::pair<std::vector<uint8_t>, std::vector<uint8_t>> createWildcardAOB(const uint8_t* bytes, size_t size, uint64_t address) {
+        std::vector<uint8_t> outBytes;
+        std::vector<uint8_t> outMask;
+        
+        if (!bytes || size == 0) return {outBytes, outMask};
+        
+        // Initialize decoder
+        ZydisDecoder decoder;
+        if (ZYAN_FAILED(ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64))) {
+            return {outBytes, outMask};
+        }
+        
+        ZydisDecodedInstruction instruction;
+        ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+        
+        // Use DecodeFull to get operands and raw info
+        if (ZYAN_SUCCESS(ZydisDecoderDecodeFull(&decoder, bytes, size, &instruction, operands))) {
+            outBytes.resize(instruction.length);
+            outMask.resize(instruction.length, 0xFF); // Default: match everything
+            
+            // Copy raw bytes
+            std::memcpy(outBytes.data(), bytes, instruction.length);
+            
+            // Mask relative displacement
+            if (instruction.attributes & ZYDIS_ATTRIB_HAS_MODRM) {
+                 if (instruction.raw.disp.size > 0 && instruction.raw.disp.offset > 0) {
+                     // Check if rip-relative memory operand
+                     for(int i=0; i<instruction.operand_count; ++i) {
+                         if (operands[i].type == ZYDIS_OPERAND_TYPE_MEMORY && 
+                             operands[i].mem.base == ZYDIS_REGISTER_RIP) {
+                             // Mask displacement bytes
+                             for (int j = 0; j < instruction.raw.disp.size / 8; ++j) {
+                                 size_t offset = instruction.raw.disp.offset / 8 + j;
+                                 if (offset < outMask.size()) outMask[offset] = 0x00;
+                             }
+                             break;
+                         }
+                     }
+                 }
+            }
+            
+            // Mask relative immediate (e.g. JZA, CALL)
+            // Usually branch instructions with immediate operand
+            if (instruction.meta.category == ZYDIS_CATEGORY_COND_BR || 
+                instruction.meta.category == ZYDIS_CATEGORY_UNCOND_BR || 
+                instruction.meta.category == ZYDIS_CATEGORY_CALL) {
+                
+                for(int i=0; i<instruction.operand_count; ++i) {
+                     if (operands[i].type == ZYDIS_OPERAND_TYPE_IMMEDIATE && operands[i].imm.is_relative) {
+                         // Find immediate offset in raw instruction
+                         // Zydis puts immediate info in instruction.raw.imm[i]
+                         // But we need to match operand index to imm index?
+                         // Usually imm[0] corresponds to the immediate operand.
+                         
+                         // Iterate raw imms
+                         for(int k=0; k<2; ++k) {
+                             if (instruction.raw.imm[k].size > 0 && instruction.raw.imm[k].is_relative) {
+                                  for (int j = 0; j < instruction.raw.imm[k].size / 8; ++j) {
+                                     size_t offset = instruction.raw.imm[k].offset / 8 + j;
+                                     if (offset < outMask.size()) outMask[offset] = 0x00;
+                                 }
+                             }
+                         }
+                     }
+                }
+            }
+        }
+        
+        return {outBytes, outMask};
+    }
 }
