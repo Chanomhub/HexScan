@@ -195,7 +195,7 @@ void ScannerWindow::scanControls() {
 
     ImGui::EndGroup();
 
-    static int regionPermR = 2, regionPermW = 2, regionPermX = 0, regionPermP = 1;
+    static int regionPermR = 2, regionPermW = 1, regionPermX = 1, regionPermP = 1;
     if (ImGui::TreeNode("Settings")) {
         Widgets::tristateCheckbox("r", &regionPermR);
         ImGui::SameLine();
