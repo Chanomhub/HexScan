@@ -94,6 +94,7 @@ set(COMMON_SOURCES
         src/backend/disassembler/disassembler.cpp
         src/backend/patch/patchManager.cpp
         src/backend/starredAddress/starredAddress.cpp
+        src/backend/cheatTable/cheatTable.cpp
 )
 
 find_package(GTest CONFIG)

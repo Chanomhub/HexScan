@@ -48,7 +48,7 @@ std::function<bool(const void*)> Scanner::getCommonComparator() const {
             if constexpr (std::is_floating_point_v<T>) {
                 return [this](const void* mem) {
                     return std::abs(*static_cast<const T*>(mem) - 
-                                  *reinterpret_cast<const T*>(valueBytes.data())) < static_cast<T>(0.001);
+                                  *reinterpret_cast<const T*>(valueBytes.data())) < static_cast<T>(Settings::floatEpsilon);
                 };
             }
             return [this](const void* mem) {
@@ -95,7 +95,7 @@ std::function<bool(const void*)> Scanner::getCommonComparator() const {
                     const T current = *static_cast<const T*>(mem);
                     const T previous = *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
                     const T expected = *reinterpret_cast<const T*>(valueBytes.data());
-                    return std::abs(current - previous - expected) < static_cast<T>(0.001);
+                    return std::abs(current - previous - expected) < static_cast<T>(Settings::floatEpsilon);
                 };
             }
             return [this, valueSize](const void* mem) {
@@ -127,7 +127,7 @@ std::function<bool(const void*)> Scanner::getCommonComparator() const {
                     const T current = *static_cast<const T*>(mem);
                     const T previous = *reinterpret_cast<const T*>(latestValues.data() + idx * valueSize);
                     const T expected = *reinterpret_cast<const T*>(valueBytes.data());
-                    return std::abs(previous - current - expected) < static_cast<T>(0.001);
+                    return std::abs(previous - current - expected) < static_cast<T>(Settings::floatEpsilon);
                 };
             }
             return [this, valueSize](const void* mem) {
@@ -282,8 +282,8 @@ std::function<bool(const void*)> Scanner::getTypeSpecificComparator() const {
                         if (Settings::allScanI32 && *static_cast<const int32_t*>(mem) == i32val) return true;
                         if (Settings::allScanI16 && *static_cast<const int16_t*>(mem) == i16val) return true;
                         if (Settings::allScanI8 && *static_cast<const int8_t*>(mem) == i8val) return true;
-                        if (Settings::allScanF64 && std::abs(*static_cast<const double*>(mem) - val) < 0.001) return true;
-                        if (Settings::allScanF32 && std::abs(*static_cast<const float*>(mem) - f32val) < 0.001f) return true;
+                        if (Settings::allScanF64 && std::abs(*static_cast<const double*>(mem) - val) < Settings::floatEpsilon) return true;
+                        if (Settings::allScanF32 && std::abs(*static_cast<const float*>(mem) - f32val) < Settings::floatEpsilon) return true;
                         break;
                     case ScanType::Bigger:
                         if (Settings::allScanI64 && *static_cast<const int64_t*>(mem) > i64val) return true;

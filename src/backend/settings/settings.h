@@ -9,6 +9,7 @@ namespace Settings {
     inline bool allScanF32 = true;
     inline bool allScanF64 = true;
     inline bool allScanString = false;
+    inline float floatEpsilon = 0.001f;
 }
 
 #endif //SETTINGS_H

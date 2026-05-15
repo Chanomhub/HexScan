@@ -16,6 +16,11 @@ void SettingsWindow::draw() {
             ImGui::Checkbox("string", &Settings::allScanString);
             ImGui::TreePop();
         }
+        ImGui::Separator();
+        ImGui::SliderFloat("Float epsilon", &Settings::floatEpsilon, 0.0000001f, 1.0f, "%.7f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Reset"))
+            Settings::floatEpsilon = 0.001f;
     }
     
     ImGui::End();
