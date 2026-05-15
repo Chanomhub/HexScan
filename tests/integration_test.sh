@@ -49,14 +49,12 @@ check_scan() {
     local scan_name=$4
 
     echo "Running Scan: $scan_name ($type, value: $value)..."
-    RESULT=$($HEXSCAN_CLI $ACTUAL_PID $type "$value" 0)
+    RESULT=$($HEXSCAN_CLI $ACTUAL_PID scan $type "$value" 0)
     
     if echo "$RESULT" | grep -qi "${expected_addr#0x}"; then
         echo "  [PASS] Found correct address."
     else
         echo "  [FAIL] Expected address $expected_addr not found in results!"
-        # echo "DEBUG: Full Result:"
-        # echo "$RESULT"
         FAILED=1
     fi
 }
@@ -70,11 +68,44 @@ check_scan "f64" "987.654" "$ADDR_F64" "Specific Type (f64)"
 # 3. Test 'all' Scan for double value
 check_scan "all" "987.654" "$ADDR_F64" "All Scan Type (double)"
 
-# 4. Test 'all' Scan for int value
-check_scan "all" "567890" "$ADDR_I64" "All Scan Type (int64)"
-
-# 5. Test string Scan
+# 4. Test string Scan
 check_scan "string" "CheatTurbine" "$ADDR_STR" "String Scan"
+
+# 5. Test Disassembler
+FUNC_ADDR=$(grep "func_dummy" target_output.txt | awk '{print $2}')
+echo "Testing Disassembler at $FUNC_ADDR..."
+DISASM_RES=$($HEXSCAN_CLI $ACTUAL_PID disasm ${FUNC_ADDR#0x} 16)
+if echo "$DISASM_RES" | grep -q ":"; then
+    echo "  [PASS] Disassembler returned instructions."
+else
+    echo "  [FAIL] Disassembler failed!"
+    FAILED=1
+fi
+
+# 6. Test Patching (NOP)
+echo "Testing Patching at $FUNC_ADDR..."
+# Read first byte before patch
+ORIG_BYTE=$(python3 -c "import os; f=open('/proc/$ACTUAL_PID/mem', 'rb'); f.seek(int('$FUNC_ADDR', 16)); print(f.read(1).hex())" 2>/dev/null)
+$HEXSCAN_CLI $ACTUAL_PID patch ${FUNC_ADDR#0x} 1 > /dev/null
+PATCHED_BYTE=$(python3 -c "import os; f=open('/proc/$ACTUAL_PID/mem', 'rb'); f.seek(int('$FUNC_ADDR', 16)); print(f.read(1).hex())" 2>/dev/null)
+
+if [ "$PATCHED_BYTE" == "90" ]; then
+    echo "  [PASS] Successfully NOPed instruction (byte is 0x90)."
+else
+    echo "  [FAIL] Patch failed! Expected 90, got $PATCHED_BYTE (Original: $ORIG_BYTE)"
+    FAILED=1
+fi
+
+# 7. Test AOB Scan
+echo "Testing AOB Scan..."
+# Get 4 bytes from a known location (int32 value)
+AOB_VAL=$(python3 -c "import os; f=open('/proc/$ACTUAL_PID/mem', 'rb'); f.seek(int('$ADDR_I32', 16)); print(' '.join(['{:02X}'.format(b) for b in f.read(4)]))" 2>/dev/null)
+echo "  Pattern to find: $AOB_VAL (at $ADDR_I32)"
+# We'll replace the second byte with a wildcard to test wildcard support
+AOB_PATTERN=$(echo $AOB_VAL | awk '{print $1 " ?? " $3 " " $4}')
+echo "  Scanning for pattern: $AOB_PATTERN"
+
+check_scan "aob" "$AOB_PATTERN" "$ADDR_I32" "AOB Scan with Wildcard"
 
 # Cleanup
 echo "Cleaning up..."

@@ -7,13 +7,39 @@
 #include <iomanip>
 #include <cstdint>
 
-/**
- * DummyTarget - A controlled application for testing memory scanners.
- * It provides known addresses and values that can be modified via CLI.
- */
+// Global pointer chain for testing
+struct Entity {
+    int32_t health;
+    int32_t padding[4];
+    int32_t mana;
+};
+
+struct GameState {
+    Entity* localPlayer;
+};
+
+GameState* g_state = nullptr;
+
+// A simple function that we can try to patch/disassemble
+extern "C" {
+    void __attribute__((noinline)) dummy_function(int* val) {
+        if (*val > 100) {
+            *val -= 10;
+        } else {
+            *val += 5;
+        }
+    }
+}
 
 int main() {
     setvbuf(stdout, NULL, _IONBF, 0);
+
+    // Initialize pointer chain
+    g_state = new GameState();
+    g_state->localPlayer = new Entity();
+    g_state->localPlayer->health = 100;
+    g_state->localPlayer->mana = 50;
+
     // Variables on stack/data section to scan
     int32_t val_i32 = 1234;
     int64_t val_i64 = 567890;
@@ -27,13 +53,18 @@ int main() {
     std::cout << "Process ID (PID): " << getpid() << std::endl;
     std::cout << std::endl;
     std::cout << "Memory Addresses to Scan:" << std::endl;
-    std::cout << std::left << std::setw(10) << "Type" << std::setw(18) << "Address" << "Value" << std::endl;
+    std::cout << std::left << std::setw(12) << "Type" << std::setw(18) << "Address" << "Value" << std::endl;
     std::cout << "----------------------------------------" << std::endl;
-    std::cout << std::setw(10) << "int32"  << std::setw(18) << (void*)&val_i32 << val_i32 << std::endl;
-    std::cout << std::setw(10) << "int64"  << std::setw(18) << (void*)&val_i64 << val_i64 << std::endl;
-    std::cout << std::setw(10) << "float"  << std::setw(18) << (void*)&val_f32 << val_f32 << std::endl;
-    std::cout << std::setw(10) << "double" << std::setw(18) << (void*)&val_f64 << val_f64 << std::endl;
-    std::cout << std::setw(10) << "string" << std::setw(18) << (void*)val_str  << val_str  << std::endl;
+    std::cout << std::setw(12) << "int32"  << std::setw(18) << (void*)&val_i32 << val_i32 << std::endl;
+    std::cout << std::setw(12) << "int64"  << std::setw(18) << (void*)&val_i64 << val_i64 << std::endl;
+    std::cout << std::setw(12) << "float"  << std::setw(18) << (void*)&val_f32 << val_f32 << std::endl;
+    std::cout << std::setw(12) << "double" << std::setw(18) << (void*)&val_f64 << val_f64 << std::endl;
+    std::cout << std::setw(12) << "string" << std::setw(18) << (void*)val_str  << val_str  << std::endl;
+
+    std::cout << std::setw(12) << "ptr_base" << std::setw(18) << (void*)&g_state << " (g_state)" << std::endl;
+    std::cout << std::setw(12) << "ptr_health" << std::setw(18) << (void*)&g_state->localPlayer->health << g_state->localPlayer->health << std::endl;
+    std::cout << std::setw(12) << "func_dummy" << std::setw(18) << (void*)&dummy_function << " (noinline)" << std::endl;
+
     std::cout << "========================================" << std::endl;
 
     char cmd;

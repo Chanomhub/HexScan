@@ -12,6 +12,9 @@ void Regions::parse() {
     regions.clear();
     Gui::log("Parsing regions..");
     std::ifstream maps("/proc/" + std::to_string(SelectedProcess::pid) + "/maps");
+    if (!maps.is_open()) {
+        return;
+    }
 
     std::string line;
     unsigned regionsParsed = 0;

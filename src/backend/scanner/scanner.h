@@ -61,16 +61,18 @@ private:
     std::vector<uint8_t> valueBytesSecond;
     std::vector<uint8_t> valueMask;
     
-    // Private helper methods
+    void performNewScan(std::function<bool(const void*)> cmp);
+    void performNextScan(std::function<bool(const void*)> cmp);
+
+    // Private helper methods for scanning
     template<typename T>
     std::function<bool(const void*)> getCommonComparator() const;
     
     std::function<bool(const void*)> getStringComparator() const;
     std::function<bool(const void*)> getAOBComparator() const;
     std::function<bool(const void*)> getTypeSpecificComparator() const;
-    
-    void performNewScan(std::function<bool(const void*)> cmp);
-    void performNextScan(std::function<bool(const void*)> cmp);
+
+    friend class ScannerComparatorTest_AOBMatching_Test;
 
 public:
     /**

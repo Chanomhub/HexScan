@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdint>
 #include <cctype>
+#include <sstream>
 
 // AOB parsing result structure
 struct AOBParseResult {
@@ -16,44 +17,61 @@ struct AOBParseResult {
 
 inline AOBParseResult ParseAOBString(const std::string& input) {
     AOBParseResult result;
+    std::stringstream ss(input);
+    std::string token;
     
-    std::string clean;
-    // Remove all whitespace
-    for (char c : input) {
-        if (!std::isspace(static_cast<unsigned char>(c))) {
-            clean += c;
-        }
-    }
-    
-    // Must have even number of chars
-    if (clean.length() % 2 != 0) {
-        result.errorMessage = "Invalid AOB string: odd number of characters";
-        return result;
-    }
-    
-    if (clean.empty()) {
-        result.errorMessage = "Empty AOB string";
-        return result;
-    }
-    
-    for (size_t i = 0; i < clean.length(); i += 2) {
-        std::string byteStr = clean.substr(i, 2);
-        
-        if (byteStr == "??" || byteStr == "**") {
-            // Wildcard byte
+    while (ss >> token) {
+        if (token == "?" || token == "??") {
+            result.bytes.push_back(0x00);
+            result.mask.push_back(0x00);
+        } else if (token == "*" || token == "**") {
             result.bytes.push_back(0x00);
             result.mask.push_back(0x00);
         } else {
-            // Validate hex characters
-            if (!std::isxdigit(static_cast<unsigned char>(byteStr[0])) || 
-                !std::isxdigit(static_cast<unsigned char>(byteStr[1]))) {
-                result.errorMessage = "Invalid character in AOB string at position " + std::to_string(i);
-                return result;
+            // Must be even length if not a single-byte wildcard
+            if (token.length() % 2 != 0) {
+                 result.errorMessage = "Invalid AOB token: " + token + " (odd length)";
+                 return result;
             }
-            uint8_t byte = static_cast<uint8_t>(std::stoul(byteStr, nullptr, 16));
-            result.bytes.push_back(byte);
-            result.mask.push_back(0xFF);
+            
+            for (size_t i = 0; i < token.length(); i += 2) {
+                uint8_t byte = 0;
+                uint8_t mask = 0xFF;
+                
+                char c1 = token[i];
+                char c2 = token[i+1];
+                
+                // Process high nibble
+                if (c1 == '?' || c1 == '*') {
+                    mask &= 0x0F;
+                } else if (std::isxdigit(static_cast<unsigned char>(c1))) {
+                    std::string s(1, c1);
+                    byte |= (static_cast<uint8_t>(std::stoul(s, nullptr, 16)) << 4);
+                } else {
+                    result.errorMessage = "Invalid hex char: " + std::string(1, c1);
+                    return result;
+                }
+                
+                // Process low nibble
+                if (c2 == '?' || c2 == '*') {
+                    mask &= 0xF0;
+                } else if (std::isxdigit(static_cast<unsigned char>(c2))) {
+                    std::string s(1, c2);
+                    byte |= static_cast<uint8_t>(std::stoul(s, nullptr, 16));
+                } else {
+                    result.errorMessage = "Invalid hex char: " + std::string(1, c2);
+                    return result;
+                }
+                
+                result.bytes.push_back(byte);
+                result.mask.push_back(mask);
+            }
         }
+    }
+    
+    if (result.bytes.empty()) {
+        result.errorMessage = "Empty AOB string";
+        return result;
     }
     
     result.success = true;
