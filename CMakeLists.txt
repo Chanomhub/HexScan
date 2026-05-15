@@ -95,6 +95,7 @@ set(COMMON_SOURCES
         src/backend/patch/patchManager.cpp
         src/backend/starredAddress/starredAddress.cpp
         src/backend/cheatTable/cheatTable.cpp
+        src/backend/moduleList/moduleList.cpp
 )
 
 find_package(GTest CONFIG)
@@ -133,6 +134,7 @@ add_executable(HexScan src/main.cpp
         src/gui/windows/structureDissector/structureDissectorWindow.cpp
         src/gui/windows/accessTracker/accessTrackerWindow.cpp
         src/gui/windows/disassembler/disassemblerWindow.cpp
+        src/gui/windows/moduleList/moduleListWindow.cpp
         ${COMMON_SOURCES}
 )
 

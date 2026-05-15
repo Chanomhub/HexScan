@@ -144,6 +144,8 @@ void MenuBarWindow::draw() {
                     Gui::addWindow(new StructureDissectorWindow());
                 if (ImGui::MenuItem("Disassembler"))
                     Gui::addWindow(new DisassemblerWindow());
+                if (ImGui::MenuItem("Module list"))
+                    Gui::addWindow(new ModuleListWindow());
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
