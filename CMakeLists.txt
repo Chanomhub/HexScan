@@ -77,15 +77,38 @@ find_package(imgui CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Fontconfig REQUIRED)
+find_package(zydis CONFIG REQUIRED)
+
+set(COMMON_SOURCES
+        src/backend/selectedProcess/selectedProcess.cpp
+        src/backend/virtualMemory/virtualMemory.cpp
+        src/backend/scanner/scanner.cpp
+        src/backend/regions/regions.cpp
+        src/backend/settings/settings.cpp
+        src/backend/pointerMap/pointerMap.cpp
+        src/backend/pointerScan/pointerScan.cpp
+        src/backend/pointerChain/pointerChain.cpp
+        src/backend/CTvalue/CTvalue.cpp
+        src/backend/debugger/hwBreakpoint.cpp
+        src/backend/debugger/accessTracker.cpp
+        src/backend/disassembler/disassembler.cpp
+        src/backend/patch/patchManager.cpp
+        src/backend/starredAddress/starredAddress.cpp
+)
+
 find_package(GTest CONFIG)
 if(GTest_FOUND)
     enable_testing()
-    add_executable(ScannerTests tests/scanner_tests.cpp src/backend/scanner/scanner.cpp src/backend/scanner/aobUtils.h src/backend/selectedProcess/selectedProcess.cpp src/backend/virtualMemory/virtualMemory.cpp src/backend/regions/regions.cpp src/backend/CTvalue/CTvalue.cpp src/backend/settings/settings.cpp)
-    target_link_libraries(ScannerTests PRIVATE GTest::gtest GTest::gtest_main)
+    add_executable(ScannerTests tests/scanner_tests.cpp ${COMMON_SOURCES})
+    target_link_libraries(ScannerTests PRIVATE GTest::gtest GTest::gtest_main Zydis::Zydis)
     add_test(NAME ScannerTests COMMAND ScannerTests)
+    add_test(NAME IntegrationTest COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration_test.sh .)
 endif()
 
 add_executable(DummyTarget examples/dummy_target.cpp)
+
+add_executable(HexScanCLI src/cli_main.cpp ${COMMON_SOURCES})
+target_link_libraries(HexScanCLI PRIVATE Zydis::Zydis)
 
 add_executable(HexScan src/main.cpp
         src/gui/gui.cpp
@@ -93,40 +116,27 @@ add_executable(HexScan src/main.cpp
         src/gui/impl/imgui/imguiImpl.cpp
         src/gui/windows/generic/window.cpp
         src/gui/windows/processSelector/processSelectorWindow.cpp
-        src/gui/windows/processSelector/processSelectorWindow.cpp
         src/gui/windows/memoryEditor/memoryEditorWindow.cpp
-        src/backend/selectedProcess/selectedProcess.cpp
-        src/backend/virtualMemory/virtualMemory.cpp
-        src/backend/scanner/scanner.cpp
         src/gui/windows/dockSpace/dockSpaceWindow.cpp
         src/gui/windows/logBar/logBarWindow.cpp
         src/gui/windows/settings/settingsWindow.cpp
         src/gui/windows/starredAddresses/starredAddressesWindow.cpp
-        src/backend/starredAddress/starredAddress.cpp
         src/gui/windows/menuBar/menuBar.cpp
-        src/backend/settings/settings.cpp
         src/gui/windows/scanner/scannerWindow.cpp
         src/gui/windows/logs/logsWindow.cpp
         src/gui/windows/imguiDemo/imguiDemo.cpp
         src/gui/windows/pointerScan/pointerScanWindow.cpp
-        src/backend/regions/regions.cpp
         src/gui/widgets/widgets.cpp
-        src/backend/pointerMap/pointerMap.cpp
-        src/backend/pointerScan/pointerScan.cpp
         src/gui/windows/pointerMapManager/pointerMapManagerWindow.cpp
-        src/backend/pointerChain/pointerChain.cpp
         src/gui/windows/pchainEditor/pchainEditorWindow.cpp
         src/gui/windows/structureDissector/structureDissectorWindow.cpp
-        src/backend/CTvalue/CTvalue.cpp
-        src/backend/debugger/hwBreakpoint.cpp
-        src/backend/debugger/accessTracker.cpp
         src/gui/windows/accessTracker/accessTrackerWindow.cpp
-        src/backend/disassembler/disassembler.cpp
         src/gui/windows/disassembler/disassemblerWindow.cpp
-        src/backend/patch/patchManager.cpp
+        ${COMMON_SOURCES}
 )
 
 target_link_libraries(HexScan PRIVATE Vulkan::Vulkan imgui::imgui glfw fontconfig Zydis::Zydis)
 
 configure_file(src/config/config.h.in config.h)
-target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(HexScan PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(HexScanCLI PUBLIC "${PROJECT_BINARY_DIR}")

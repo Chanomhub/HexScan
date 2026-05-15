@@ -52,6 +52,7 @@ void Regions::parse() {
             continue;
         if ((region.mode & mustHavePerms) != mustHavePerms)
             continue;
+        Gui::log("Matched region: {:p} - {:p} mode: {:x}", region.start, region.end, (int)region.mode);
         regions.emplace_back(region);
     }
 

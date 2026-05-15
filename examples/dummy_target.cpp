@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 #include <unistd.h>
+#include <thread>
+#include <chrono>
 #include <iomanip>
 #include <cstdint>
 
@@ -11,6 +13,7 @@
  */
 
 int main() {
+    setvbuf(stdout, NULL, _IONBF, 0);
     // Variables on stack/data section to scan
     int32_t val_i32 = 1234;
     int64_t val_i64 = 567890;
@@ -36,7 +39,12 @@ int main() {
     char cmd;
     while (true) {
         std::cout << "\nWaiting for command ([c]hange, [i]ncrease, [d]ecrease, [r]eset, [q]uit): ";
-        if (!(std::cin >> cmd)) break;
+        std::string input;
+        if (!(std::cin >> input)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        cmd = input[0];
 
         if (cmd == 'q') break;
 
