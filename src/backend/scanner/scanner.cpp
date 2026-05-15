@@ -1,5 +1,6 @@
 #include "scanner.h"
 #include "aobUtils.h"
+#include "../settings/settings.h"
 
 #include <cmath>
 #include <cstring>
@@ -255,9 +256,93 @@ std::function<bool(const void*)> Scanner::getTypeSpecificComparator() const {
             
         case byteArray:
             return getAOBComparator();
+
+        case all: {
+            // For 'all' type, we use double as the input value to support both integers and floats
+            const double val = *reinterpret_cast<const double*>(valueBytes.data());
+            const double valSecond = valueBytesSecond.size() >= sizeof(double) ? *reinterpret_cast<const double*>(valueBytesSecond.data()) : 0.0;
+            
+            const int64_t i64val = static_cast<int64_t>(val);
+            const int32_t i32val = static_cast<int32_t>(val);
+            const int16_t i16val = static_cast<int16_t>(val);
+            const int8_t i8val = static_cast<int8_t>(val);
+            const float f32val = static_cast<float>(val);
+            
+            const int64_t i64val2 = static_cast<int64_t>(valSecond);
+            const int32_t i32val2 = static_cast<int32_t>(valSecond);
+            const int16_t i16val2 = static_cast<int16_t>(valSecond);
+            const int8_t i8val2 = static_cast<int8_t>(valSecond);
+            const float f32val2 = static_cast<float>(valSecond);
+            const ScanType st = scanType;
+
+            return [=, this](const void* mem) {
+                switch (st) {
+                    case ScanType::Equal:
+                        if (Settings::allScanI64 && *static_cast<const int64_t*>(mem) == i64val) return true;
+                        if (Settings::allScanI32 && *static_cast<const int32_t*>(mem) == i32val) return true;
+                        if (Settings::allScanI16 && *static_cast<const int16_t*>(mem) == i16val) return true;
+                        if (Settings::allScanI8 && *static_cast<const int8_t*>(mem) == i8val) return true;
+                        if (Settings::allScanF64 && std::abs(*static_cast<const double*>(mem) - val) < 0.001) return true;
+                        if (Settings::allScanF32 && std::abs(*static_cast<const float*>(mem) - f32val) < 0.001f) return true;
+                        break;
+                    case ScanType::Bigger:
+                        if (Settings::allScanI64 && *static_cast<const int64_t*>(mem) > i64val) return true;
+                        if (Settings::allScanI32 && *static_cast<const int32_t*>(mem) > i32val) return true;
+                        if (Settings::allScanI16 && *static_cast<const int16_t*>(mem) > i16val) return true;
+                        if (Settings::allScanI8 && *static_cast<const int8_t*>(mem) > i8val) return true;
+                        if (Settings::allScanF64 && *static_cast<const double*>(mem) > val) return true;
+                        if (Settings::allScanF32 && *static_cast<const float*>(mem) > f32val) return true;
+                        break;
+                    case ScanType::Smaller:
+                        if (Settings::allScanI64 && *static_cast<const int64_t*>(mem) < i64val) return true;
+                        if (Settings::allScanI32 && *static_cast<const int32_t*>(mem) < i32val) return true;
+                        if (Settings::allScanI16 && *static_cast<const int16_t*>(mem) < i16val) return true;
+                        if (Settings::allScanI8 && *static_cast<const int8_t*>(mem) < i8val) return true;
+                        if (Settings::allScanF64 && *static_cast<const double*>(mem) < val) return true;
+                        if (Settings::allScanF32 && *static_cast<const float*>(mem) < f32val) return true;
+                        break;
+                    case ScanType::Range:
+                        if (Settings::allScanI64) { const auto v = *static_cast<const int64_t*>(mem); if (v > i64val && v < i64val2) return true; }
+                        if (Settings::allScanI32) { const auto v = *static_cast<const int32_t*>(mem); if (v > i32val && v < i32val2) return true; }
+                        if (Settings::allScanI16) { const auto v = *static_cast<const int16_t*>(mem); if (v > i16val && v < i16val2) return true; }
+                        if (Settings::allScanI8) { const auto v = *static_cast<const int8_t*>(mem); if (v > i8val && v < i8val2) return true; }
+                        if (Settings::allScanF64) { const auto v = *static_cast<const double*>(mem); if (v > val && v < valSecond) return true; }
+                        if (Settings::allScanF32) { const auto v = *static_cast<const float*>(mem); if (v > f32val && v < f32val2) return true; }
+                        break;
+                    case ScanType::Unknown:
+                        return true;
+                    case ScanType::Increased:
+                    case ScanType::IncreasedBy:
+                    case ScanType::Decreased:
+                    case ScanType::DecreasedBy:
+                    case ScanType::Changed:
+                    case ScanType::Unchanged: {
+                        // For relative scans, we'd need to know the original type.
+                        // For now, let's just use i32 as fallback or handle them specifically if needed.
+                        // However, 'all' is mostly used for initial scans.
+                        const size_t idx = scannedAddresses.load(std::memory_order_relaxed);
+                        if (idx * 8 >= latestValues.size()) return false;
+                        const void* prevMem = latestValues.data() + idx * 8;
+                        
+                        if (scanType == ScanType::Changed) {
+                             return *static_cast<const int64_t*>(mem) != *static_cast<const int64_t*>(prevMem);
+                        } else if (scanType == ScanType::Unchanged) {
+                             return *static_cast<const int64_t*>(mem) == *static_cast<const int64_t*>(prevMem);
+                        }
+                        // Fallback to i32 for other relative scans if 'all' is used (unusual)
+                        if (Settings::allScanI32) {
+                            const int32_t curr = *static_cast<const int32_t*>(mem);
+                            const int32_t prev = *static_cast<const int32_t*>(prevMem);
+                            if (scanType == ScanType::Increased) return curr > prev;
+                            if (scanType == ScanType::Decreased) return curr < prev;
+                        }
+                        return false;
+                    }
+                }
+                return false;
+            };
+        }
     }
-    
-    throw std::runtime_error("Invalid value type");
 }
 
 void Scanner::newScan() {

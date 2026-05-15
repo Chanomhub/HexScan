@@ -18,11 +18,11 @@ void MenuBarWindow::draw() {
             ImGui::EndMenu();
         }
 
-        // if (ImGui::BeginMenu("Edit")) {
-        //     if (ImGui::MenuItem("Settings"))
-        //         Gui::addWindow(new SettingsWindow());
-        //     ImGui::EndMenu();
-        // }
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Settings"))
+                Gui::addWindow(new SettingsWindow());
+            ImGui::EndMenu();
+        }
 
         if (ImGui::BeginMenu("Windows")) {
             if (ImGui::BeginMenu("Opened")) {
@@ -52,8 +52,8 @@ void MenuBarWindow::draw() {
                     Gui::addWindow(new ScannerWindow());
                 if (ImGui::MenuItem("Memory editor"))
                     Gui::addWindow(new MemoryEditorWindow());
-                // if (ImGui::MenuItem("Settings"))
-                //     Gui::addWindow(new SettingsWindow());
+                if (ImGui::MenuItem("Settings"))
+                    Gui::addWindow(new SettingsWindow());
                 if (ImGui::MenuItem("Starred addresses"))
                     Gui::addWindow(new StarredAddressesWindow());
                 if (ImGui::MenuItem("Logs"))

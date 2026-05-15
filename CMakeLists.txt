@@ -38,6 +38,21 @@ set(COMMON_FLAGS "-Wall -Wextra -Winline -pipe -static-libgcc -fno-stack-protect
 set(DEBUG_FLAGS "-g -ggdb3")
 set(RELEASE_FLAGS "-DNDEBUG -DNS_BLOCK_ASSERTIONS -O3 -flto")
 
+option(USE_ASAN "Enable AddressSanitizer" OFF)
+option(USE_TSAN "Enable ThreadSanitizer" OFF)
+
+if(USE_ASAN)
+    message("Enabling AddressSanitizer")
+    set(COMMON_FLAGS "${COMMON_FLAGS} -fsanitize=address")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+endif()
+
+if(USE_TSAN)
+    message("Enabling ThreadSanitizer")
+    set(COMMON_FLAGS "${COMMON_FLAGS} -fsanitize=thread")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+endif()
+
 set(CMAKE_C_FLAGS "${COMMON_FLAGS} ${TARGET_ARCH_FLAGS}")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} ${DEBUG_FLAGS}")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${RELEASE_FLAGS}")
@@ -62,8 +77,15 @@ find_package(imgui CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Fontconfig REQUIRED)
-find_package(zydis CONFIG REQUIRED)
-#add_subdirectory(external/zydis)
+find_package(GTest CONFIG)
+if(GTest_FOUND)
+    enable_testing()
+    add_executable(ScannerTests tests/scanner_tests.cpp src/backend/scanner/scanner.cpp src/backend/scanner/aobUtils.h src/backend/selectedProcess/selectedProcess.cpp src/backend/virtualMemory/virtualMemory.cpp src/backend/regions/regions.cpp src/backend/CTvalue/CTvalue.cpp src/backend/settings/settings.cpp)
+    target_link_libraries(ScannerTests PRIVATE GTest::gtest GTest::gtest_main)
+    add_test(NAME ScannerTests COMMAND ScannerTests)
+endif()
+
+add_executable(DummyTarget examples/dummy_target.cpp)
 
 add_executable(HexScan src/main.cpp
         src/gui/gui.cpp

@@ -13,6 +13,8 @@ unsigned CTvalue::getSize() const {
     static constexpr std::array<int, 6> sizes{8, 4, 2, 1, 8, 4};
     if (type == string || type == byteArray)
         return stringLength;
+    if (type == all)
+        return 8;
     return sizes[type];
 }
 
@@ -26,6 +28,7 @@ ImGuiDataType CTvalue::getImGuiDataType() const {
         ImGuiDataType_U64, ImGuiDataType_U32, ImGuiDataType_U16, ImGuiDataType_U8, ImGuiDataType_Double,
         ImGuiDataType_Float
     };
+    if (type == all) return ImGuiDataType_Double;
     const unsigned currentIndex = type;
     return flags & isSigned ? signedTypes[currentIndex] : unsignedTypes[currentIndex];
 }
@@ -49,6 +52,7 @@ std::string CTvalue::format(void* mem, const bool hex) const {
             snprintf(buf, 128, fmt, *(uint8_t*)mem);
             break;
         case f64:
+        case all:
             snprintf(buf, 128, fmt, *(double_t*)mem);
             break;
         case f32:
@@ -75,14 +79,14 @@ std::string CTvalue::format(void* mem, const bool hex) const {
 
 std::string CTvalue::getFmtStr(const bool hex) const {
     char fmt[8] = "%";
-    static constexpr std::array<char[3], 8> fmts{"ll", "l", "h", "hh", "", "", "s"};
+    static constexpr std::array<char[3], 9> fmts{"ll", "l", "h", "hh", "", "", "s", "", ""};
 
     strcpy(&fmt[1], fmts[type]);
     if (type != string && type != byteArray) {
         if (hex)
-            strcat(fmt, (type == f32 or type == f64) ? "a" : "x");
+            strcat(fmt, (type == f32 or type == f64 or type == all) ? "a" : "x");
         else
-            strcat(fmt, (type == f32 or type == f64) ? "f" : (flags & isSigned ? "d" : "u"));
+            strcat(fmt, (type == f32 or type == f64 or type == all) ? "f" : (flags & isSigned ? "d" : "u"));
     }
 
     return fmt;
