@@ -96,6 +96,7 @@ set(COMMON_SOURCES
         src/backend/starredAddress/starredAddress.cpp
         src/backend/cheatTable/cheatTable.cpp
         src/backend/moduleList/moduleList.cpp
+        src/backend/codeInjection/codeInjection.cpp
 )
 
 find_package(GTest CONFIG)

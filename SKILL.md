@@ -37,7 +37,10 @@ CheatTurbine/
 │   │   ├── pointerChain/           # Resolve multi-level pointer chains
 │   │   ├── CTvalue/                # Value type system (i8..f64, string, AOB)
 │   │   ├── starredAddress/         # Saved/bookmarked addresses with freeze
-│   │   └── settings/               # Global settings
+│   │   ├── cheatTable/             # Save/Load starred addresses to XML (.hxt)
+│   │   ├── moduleList/             # Enumerate loaded modules from /proc/pid/maps
+│   │   ├── codeInjection/          # Remote mmap + trampoline hooks
+│   │   └── settings/               # Global settings (float epsilon, scan types)
 │   ├── gui/                        # ImGui windows
 │   │   ├── gui.cpp                 # Main GUI loop + window management
 │   │   ├── impl/                   # Vulkan + ImGui backend impl
@@ -113,7 +116,19 @@ bash tests/integration_test.sh build
 - Types: `i8, i16, i32, i64, f32, f64, string, byteArray, all`
 - Flags: `isSigned`, `isNullTerminated`, `pchain`
 
-### 6. GUI — ImGui windows
+### 6. Code Injection — `CodeInjection` namespace
+- `PtraceSession` RAII helper: attach → save regs → inject syscall → restore → detach
+- `allocateRemote(size)` → injects `mmap(RWX)` syscall in target
+- `installHook(addr)` → disassemble → displace to cave → JMP back → overwrite with JMP to cave
+- Near JMP (5 bytes, E9) or far JMP (14 bytes, FF 25) auto-selected based on distance
+- Safety: refuses if `AccessTracker` is already ptracing the target
+
+### 7. Cheat Table — `CheatTable` namespace
+- Save/Load starred addresses to `.hxt` XML files
+- Handles all value types, flags, display types, frozen values, pointer chains
+- Pointer chains auto-rebase from module path on load
+
+### 8. GUI — ImGui windows
 - Each window inherits from `Window` base class
 - `Gui::getWindows<T>()` to find windows by type
 - `Gui::log()` for logging (fmt-style formatting)
@@ -153,6 +168,17 @@ Automated test that starts DummyTarget + HexScanCLI:
 - Disassembly verification
 - NOP patch verification
 
+### CLI Commands (cli_main.cpp)
+```bash
+./HexScanCLI <pid> scan <type> <value> [scan_type]
+./HexScanCLI <pid> disasm <address> [length]
+./HexScanCLI <pid> patch <address> <length>
+./HexScanCLI <pid> alloc <size>     # Remote mmap
+./HexScanCLI <pid> hook <address>   # Install trampoline
+./HexScanCLI <pid> unhook <address> # Remove hook
+./HexScanCLI <pid> modules          # List loaded modules
+```
+
 ### Unit Tests (tests/scanner_tests.cpp)
 GTest-based scanner comparator tests.
 
@@ -168,4 +194,8 @@ GTest-based scanner comparator tests.
 
 4. **Fast scan alignment**: `fastScanOffset` defaults to 4. Set to 1 for AOB scans or i8/i16 scans to avoid missing unaligned values.
 
-5. **Float comparison**: Hardcoded epsilon of 0.001 in `getCommonComparator<T>()` for floating-point equality.
+5. **Float comparison**: `Settings::floatEpsilon` (default 0.001, configurable via Settings UI). All scanner comparators use this value.
+
+6. **Code injection requires elevated privileges**: `ptrace(PTRACE_ATTACH)` needs `sudo` or `CAP_SYS_PTRACE`. Same applies to `alloc`/`hook`/`unhook` CLI commands.
+
+7. **Code injection + AccessTracker conflict**: `CodeInjection` refuses to operate while `AccessTracker` is actively tracing. Stop tracking first.

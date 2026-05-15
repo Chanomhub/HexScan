@@ -27,11 +27,17 @@ void printUsage() {
     std::cout << "  scan <type> <value> [scan_type]" << std::endl;
     std::cout << "  disasm <address> [length]" << std::endl;
     std::cout << "  patch <address> <length> (NOPs the instruction)" << std::endl;
+    std::cout << "  alloc <size> (allocate RWX memory in target)" << std::endl;
+    std::cout << "  hook <address> (install trampoline hook)" << std::endl;
+    std::cout << "  unhook <address> (remove trampoline hook)" << std::endl;
+    std::cout << "  modules (list loaded modules)" << std::endl;
     std::cout << "Types: i8, i16, i32, i64, f32, f64, string, all" << std::endl;
 }
 
 #include "backend/disassembler/disassembler.h"
 #include "backend/patch/patchManager.h"
+#include "backend/codeInjection/codeInjection.h"
+#include "backend/moduleList/moduleList.h"
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {
@@ -161,6 +167,44 @@ int main(int argc, char* argv[]) {
             std::cout << "Successfully patched at 0x" << std::hex << addr << std::dec << std::endl;
         } else {
             std::cout << "Failed to patch." << std::endl;
+        }
+    }
+    else if (cmd == "alloc") {
+        if (argc < 4) { printUsage(); return 1; }
+        size_t size = std::stoul(argv[3]);
+        uint64_t addr = CodeInjection::allocateRemote(size, "CLI alloc");
+        if (addr) {
+            std::cout << "Allocated at 0x" << std::hex << addr << std::dec << std::endl;
+        } else {
+            std::cout << "Failed to allocate." << std::endl;
+        }
+    }
+    else if (cmd == "hook") {
+        if (argc < 4) { printUsage(); return 1; }
+        uint64_t addr = std::stoull(argv[3], nullptr, 16);
+        if (CodeInjection::installHook(addr, {}, "CLI hook")) {
+            std::cout << "Hook installed at 0x" << std::hex << addr << std::dec << std::endl;
+        } else {
+            std::cout << "Failed to install hook." << std::endl;
+        }
+    }
+    else if (cmd == "unhook") {
+        if (argc < 4) { printUsage(); return 1; }
+        uint64_t addr = std::stoull(argv[3], nullptr, 16);
+        if (CodeInjection::removeHook(addr)) {
+            std::cout << "Hook removed at 0x" << std::hex << addr << std::dec << std::endl;
+        } else {
+            std::cout << "Failed to remove hook." << std::endl;
+        }
+    }
+    else if (cmd == "modules") {
+        auto modules = ModuleList::getModules();
+        std::cout << modules.size() << " modules loaded:" << std::endl;
+        for (const auto& mod : modules) {
+            std::cout << "  0x" << std::hex << mod.baseAddress << std::dec
+                      << "  " << mod.size << " bytes"
+                      << "  " << mod.name
+                      << "  (" << mod.path << ")" << std::endl;
         }
     }
 
