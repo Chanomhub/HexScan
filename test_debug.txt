@@ -1,0 +1,425 @@
++ BUILD_DIR=build
++ DUMMY_TARGET=./build/DummyTarget
++ HEXSCAN_CLI=./build/HexScanCLI
++ [[ ! -f ./build/DummyTarget ]]
++ [[ ! -f ./build/HexScanCLI ]]
++ echo 'Starting DummyTarget...'
+Starting DummyTarget...
++ echo q
++ TARGET_PID=225268
++ ./build/DummyTarget
++ for i in {1..20}
++ grep -q PID: target_output.txt
++ break
++ sleep 1
+++ grep '^i32 ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_I32=0x5023a8
+++ grep '^i64 ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_I64=0x5023b0
+++ grep '^f32 ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_F32=0x5023c8
+++ grep '^f64 ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_F64=0x5023d0
+++ grep '^string ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_STR=0x5023e0
+++ grep '^tick ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_TICK=0x502640
+++ grep '^g_world ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_GWORLD=0x502630
+++ grep '^health ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_HEALTH=0xf866040
+++ grep '^gold ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_GOLD=0xf866090
+++ grep '^player ' target_output.txt
+++ head -1
+++ awk '{print $3}'
++ ADDR_PLAYER=0xf866020
+++ grep '^applyDamage ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ FUNC_APPLYDMG=0x404bc0
+++ grep '^healPlayer ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ FUNC_HEAL=0x404c00
+++ grep '^stack_i32 ' target_output.txt
+++ head -1
+++ awk '{print $2}'
++ ADDR_STACK_I32=0x7ffea390d15c
++ echo 'Ground Truth from DummyTarget:'
+Ground Truth from DummyTarget:
++ echo '  i32:    0x5023a8'
+  i32:    0x5023a8
++ echo '  f64:    0x5023d0'
+  f64:    0x5023d0
++ echo '  string: 0x5023e0'
+  string: 0x5023e0
++ echo '  tick:   0x502640'
+  tick:   0x502640
++ echo '  g_world:0x502630'
+  g_world:0x502630
++ echo '  health: 0xf866040'
+  health: 0xf866040
++ echo '  player: 0xf866020'
+  player: 0xf866020
++ echo '  stack:  0x7ffea390d15c'
+  stack:  0x7ffea390d15c
++ kill 225268
++ wait 225268
++ rm -f target_cmd_pipe
++ mkfifo target_cmd_pipe
++ TARGET_PID=225370
++ ./build/DummyTarget
++ ACTUAL_PID=225370
++ exec
++ sleep 1
++ echo 'Test target PID: 225370'
+Test target PID: 225370
++ FAILED=0
++ PASSED=0
++ SKIPPED=0
++ echo ''
+
++ echo '═══ SECTION 1: Value Scanning ═══'
+═══ SECTION 1: Value Scanning ═══
++ check_scan i32 123456 0x5023a8 'i32 exact scan'
++ local type=i32
++ local value=123456
++ local expected_addr=0x5023a8
++ local 'scan_name=i32 exact scan'
++ echo 'Running: i32 exact scan...'
+Running: i32 exact scan...
+++ ./build/HexScanCLI 225370 scan i32 123456 0
++ RESULT=$'[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 1225704 addresses scanned, 1 match\nScan finished. Found 1 addresses.\nFound: 0x5023a8'
++ echo $'[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 1225704 addresses scanned, 1 match\nScan finished. Found 1 addresses.\nFound: 0x5023a8'
++ grep -qi 5023a8
++ pass 'i32 exact scan'
++ echo '  [PASS] i32 exact scan'
+  [PASS] i32 exact scan
++ PASSED=1
++ check_scan f64 2.718281828 0x5023d0 'f64 exact scan'
++ local type=f64
++ local value=2.718281828
++ local expected_addr=0x5023d0
++ local 'scan_name=f64 exact scan'
++ echo 'Running: f64 exact scan...'
+Running: f64 exact scan...
+++ ./build/HexScanCLI 225370 scan f64 2.718281828 0
++ RESULT=$'[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 1225704 addresses scanned, 2 match\nScan finished. Found 2 addresses.\nFound: 0x5023d0\nFound: 0x7ffc17d2c010'
++ echo $'[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 1225704 addresses scanned, 2 match\nScan finished. Found 2 addresses.\nFound: 0x5023d0\nFound: 0x7ffc17d2c010'
++ grep -qi 5023d0
++ pass 'f64 exact scan'
++ echo '  [PASS] f64 exact scan'
+  [PASS] f64 exact scan
++ PASSED=2
++ check_scan string HexScan 0x5023e0 'string scan'
++ local type=string
++ local value=HexScan
++ local expected_addr=0x5023e0
++ local 'scan_name=string scan'
++ echo 'Running: string scan...'
+Running: string scan...
+++ ./build/HexScanCLI 225370 scan string HexScan 0
++ RESULT=$'[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 1225704 addresses scanned, 3 match\nScan finished. Found 3 addresses.\nFound: 0x4c5f74\nFound: 0x5023e0\nFound: 0x502488'
++ echo $'[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 1225704 addresses scanned, 3 match\nScan finished. Found 3 addresses.\nFound: 0x4c5f74\nFound: 0x5023e0\nFound: 0x502488'
++ grep -qi 5023e0
++ pass 'string scan'
++ echo '  [PASS] string scan'
+  [PASS] string scan
++ PASSED=3
++ check_scan all 123456 0x5023a8 'all-type scan (i32)'
++ local type=all
++ local value=123456
++ local expected_addr=0x5023a8
++ local 'scan_name=all-type scan (i32)'
++ echo 'Running: all-type scan (i32)...'
+Running: all-type scan (i32)...
+++ ./build/HexScanCLI 225370 scan all 123456 0
++ RESULT=$'[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 1225704 addresses scanned, 8 match\nScan finished. Found 8 addresses.\nFound: 0x4aa2cc\nFound: 0x5023a8\nFound: 0x7f0f1694697c\nFound: 0x7f0f1695b12c\nFound: 0x7f0f169fe7e8\nFound: 0x7f0f16a27288\nFound: 0x7f0f16a3b368\nFound: 0x7f0f16a3caa8'
++ echo $'[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 1225704 addresses scanned, 8 match\nScan finished. Found 8 addresses.\nFound: 0x4aa2cc\nFound: 0x5023a8\nFound: 0x7f0f1694697c\nFound: 0x7f0f1695b12c\nFound: 0x7f0f169fe7e8\nFound: 0x7f0f16a27288\nFound: 0x7f0f16a3b368\nFound: 0x7f0f16a3caa8'
++ grep -qi 5023a8
++ pass 'all-type scan (i32)'
++ echo '  [PASS] all-type scan (i32)'
+  [PASS] all-type scan (i32)
++ PASSED=4
++ echo 'Running: AOB scan with wildcard...'
+Running: AOB scan with wildcard...
+++ python3 -c 'import os; f=open('\''/proc/225370/mem'\'', '\''rb'\''); f.seek(int('\''0x5023a8'\'', 16)); print('\'' '\''.join(['\''{:02X}'\''.format(b) for b in f.read(4)]))'
++ AOB_VAL='40 E2 01 00'
+++ echo 40 E2 01 00
+++ awk '{print $1 " ?? " $3 " " $4}'
++ AOB_PATTERN='40 ?? 01 00'
++ check_scan aob '40 ?? 01 00' 0x5023a8 'AOB scan with wildcard'
++ local type=aob
++ local 'value=40 ?? 01 00'
++ local expected_addr=0x5023a8
++ local 'scan_name=AOB scan with wildcard'
++ echo 'Running: AOB scan with wildcard...'
+Running: AOB scan with wildcard...
+++ ./build/HexScanCLI 225370 scan aob '40 ?? 01 00' 0
++ RESULT=$'Parsed AOB: 4 bytes\n[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 4902840 addresses scanned, 197 match\nScan finished. Found 197 addresses.\nFound: 0x4051be\nFound: 0x40583a\nFound: 0x40776a\nFound: 0x407775\nFound: 0x486fe3\nFound: 0x48c467\nFound: 0x4941f4\nFound: 0x4a4e9c\nFound: 0x4a858c\nFound: 0x4b75c2\nFound: 0x4bf610\nFound: 0x4cf204\nFound: 0x4cf7dc\nFound: 0x4cf85c\nFound: 0x4cf8f4\nFound: 0x4cfadc\nFound: 0x4cfc64\nFound: 0x4cfd2c\nFound: 0x4cfdbc\nFound: 0x4cfeec\nFound: 0x4d067c\nFound: 0x4d06c4\nFound: 0x4d077c\nFound: 0x4d0844\nFound: 0x4d094c\nFound: 0x4d0b84\nFound: 0x4d0bec\nFound: 0x4d0d44\nFound: 0x4d11a4\nFound: 0x4d12ac\nFound: 0x4d1674\nFound: 0x4d16e4\nFound: 0x4d173c\nFound: 0x4d240c\nFound: 0x4d2634\nFound: 0x4d2674\nFound: 0x4d277c\nFound: 0x4dc021\nFound: 0x4e4ea0\nFound: 0x4e69a0\nFound: 0x4e6ca0\nFound: 0x4e79a0\nFound: 0x4e7ba0\nFound: 0x4e7da0\nFound: 0x4e94f4\nFound: 0x4eb7a0\nFound: 0x4ebfa0\nFound: 0x4ec0a0\nFound: 0x4ec5a0\nFound: 0x4ee7f4\nFound: 0x4ee9f4\nFound: 0x4ef2f4\nFound: 0x4efba0\nFound: 0x4efca0\nFound: 0x4efcf4\nFound: 0x4f02a0\nFound: 0x4f03a0\nFound: 0x4f0aa0\nFound: 0x4f10a0\nFound: 0x4f24a0\nFound: 0x4f32a0\nFound: 0x4f37a0\nFound: 0x5023a8\nFound: 0x7f0f16752ae5\nFound: 0x7f0f1679c21c\nFound: 0x7f0f167b1400\nFound: 0x7f0f167b3006\nFound: 0x7f0f167b4038\nFound: 0x7f0f167b41d0\nFound: 0x7f0f167b4290\nFound: 0x7f0f16823d54\nFound: 0x7f0f16823f22\nFound: 0x7f0f16835e59\nFound: 0x7f0f1683915f\nFound: 0x7f0f1683a77d\nFound: 0x7f0f1683a7af\nFound: 0x7f0f1687856d\nFound: 0x7f0f16878a37\nFound: 0x7f0f168b51b3\nFound: 0x7f0f168b9850\nFound: 0x7f0f168bc538\nFound: 0x7f0f168bcb98\nFound: 0x7f0f168bd978\nFound: 0x7f0f168beae8\nFound: 0x7f0f168c11e8\nFound: 0x7f0f168c27c0\nFound: 0x7f0f168c3900\nFound: 0x7f0f168c4398\nFound: 0x7f0f168c57d8\nFound: 0x7f0f168c6ee8\nFound: 0x7f0f168c77a0\nFound: 0x7f0f168c7e30\nFound: 0x7f0f168c8058\nFound: 0x7f0f168c9150\nFound: 0x7f0f168cadb8\nFound: 0x7f0f168cb8c8\nFound: 0x7f0f168e3670\nFound: 0x7f0f168e3dd0\nFound: 0x7f0f168e45a8\nFound: 0x7f0f168f0e7c\nFound: 0x7f0f168f0ed0\nFound: 0x7f0f168f0f08\nFound: 0x7f0f168f0f3c\nFound: 0x7f0f168f126a\nFound: 0x7f0f168f128e\nFound: 0x7f0f168f12b6\nFound: 0x7f0f168f12ca\nFound: 0x7f0f168f1316\nFound: 0x7f0f168f1342\nFound: 0x7f0f168f134e\nFound: 0x7f0f168fd2cc\nFound: 0x7f0f168fee1c\nFound: 0x7f0f168fee74\nFound: 0x7f0f168ff06c\nFound: 0x7f0f168ff4e4\nFound: 0x7f0f168ff514\nFound: 0x7f0f168ff56c\nFound: 0x7f0f168ff71c\nFound: 0x7f0f168ff7bc\nFound: 0x7f0f1690019c\nFound: 0x7f0f169001ec\nFound: 0x7f0f1690062c\nFound: 0x7f0f169009f4\nFound: 0x7f0f16900a84\nFound: 0x7f0f16900b1c\nFound: 0x7f0f16900bb4\nFound: 0x7f0f16900da4\nFound: 0x7f0f16900f2c\nFound: 0x7f0f16901084\nFound: 0x7f0f169010ec\nFound: 0x7f0f169013ac\nFound: 0x7f0f169014a4\nFound: 0x7f0f169014ec\nFound: 0x7f0f169015b4\nFound: 0x7f0f1690196c\nFound: 0x7f0f16901a8c\nFound: 0x7f0f16901e14\nFound: 0x7f0f16901fec\nFound: 0x7f0f16904534\nFound: 0x7f0f169045e4\nFound: 0x7f0f1690487c\nFound: 0x7f0f1690be41\nFound: 0x7f0f16915530\nFound: 0x7f0f16915630\nFound: 0x7f0f16915830\nFound: 0x7f0f16916530\nFound: 0x7f0f16916d30\nFound: 0x7f0f16916f30\nFound: 0x7f0f16917030\nFound: 0x7f0f16917330\nFound: 0x7f0f16917b30\nFound: 0x7f0f16918230\nFound: 0x7f0f16918830\nFound: 0x7f0f16918a30\nFound: 0x7f0f16918b30\nFound: 0x7f0f1691a930\nFound: 0x7f0f1691af30\nFound: 0x7f0f1691b130\nFound: 0x7f0f1691b230\nFound: 0x7f0f1691b830\nFound: 0x7f0f1691bb30\nFound: 0x7f0f1691c630\nFound: 0x7f0f1691cc30\nFound: 0x7f0f1691cf30\nFound: 0x7f0f1691d430\nFound: 0x7f0f1691d830\nFound: 0x7f0f1691da30\nFound: 0x7f0f1691eb30\nFound: 0x7f0f1691ef30\nFound: 0x7f0f1691f330\nFound: 0x7f0f16920530\nFound: 0x7f0f16920630\nFound: 0x7f0f16920c30\nFound: 0x7f0f16920d30\nFound: 0x7f0f16920f30\nFound: 0x7f0f16921730\nFound: 0x7f0f16922930\nFound: 0x7f0f16923730\nFound: 0x7f0f16923b30\nFound: 0x7f0f169a3e5c\nFound: 0x7f0f169aa14c\nFound: 0x7f0f169bc94c\nFound: 0x7f0f169bd34c\nFound: 0x7f0f169bd35c\nFound: 0x7f0f169c0fac\nFound: 0x7f0f169cd308\nFound: 0x7f0f169cdcc8\nFound: 0x7f0f169d0728\nFound: 0x7f0f169d13d0\nFound: 0x7f0f16a9207a\nFound: 0x7f0f16aa1354\nFound: 0x7f0f16aa13c1\nFound: 0x7f0f16aa383f\nFound: 0x7f0f16aa50d2\nFound: 0x7f0f16aa6ca3\nFound: 0x7f0f16aa78ae\nFound: 0x7f0f16ab03d8'
++ echo $'Parsed AOB: 4 bytes\n[LOG] CLIScanner: Scanner reset\n[LOG] Parsing regions..\n[LOG] Matched region: 0x400000 - 0x4c3000 mode: a\n[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8\n[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8\n[LOG] Matched region: 0x502000 - 0x503000 mode: c\n[LOG] Matched region: 0x503000 - 0x506000 mode: c\n[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c\n[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c\n[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c\n[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a\n[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8\n[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8\n[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c\n[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c\n[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a\n[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8\n[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8\n[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c\n[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c\n[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8\n[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8\n[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a\n[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a\n[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8\n[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8\n[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c\n[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c\n[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c\n[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2\n[LOG] Parsed 28 regions, 28 match\n[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000\n[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000\n[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000\n[LOG] CLIScanner: Scanning region 0x502000 - 0x503000\n[LOG] CLIScanner: Scanning region 0x503000 - 0x506000\n[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000\n[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000\n[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000\n[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000\n[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000\n[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000\n[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000\n[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000\n[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000\n[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000\n[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000\n[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000\n[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000\n[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000\n[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000\n[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000\n[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000\n[LOG] CLIScanner: Scan completed, 4902840 addresses scanned, 197 match\nScan finished. Found 197 addresses.\nFound: 0x4051be\nFound: 0x40583a\nFound: 0x40776a\nFound: 0x407775\nFound: 0x486fe3\nFound: 0x48c467\nFound: 0x4941f4\nFound: 0x4a4e9c\nFound: 0x4a858c\nFound: 0x4b75c2\nFound: 0x4bf610\nFound: 0x4cf204\nFound: 0x4cf7dc\nFound: 0x4cf85c\nFound: 0x4cf8f4\nFound: 0x4cfadc\nFound: 0x4cfc64\nFound: 0x4cfd2c\nFound: 0x4cfdbc\nFound: 0x4cfeec\nFound: 0x4d067c\nFound: 0x4d06c4\nFound: 0x4d077c\nFound: 0x4d0844\nFound: 0x4d094c\nFound: 0x4d0b84\nFound: 0x4d0bec\nFound: 0x4d0d44\nFound: 0x4d11a4\nFound: 0x4d12ac\nFound: 0x4d1674\nFound: 0x4d16e4\nFound: 0x4d173c\nFound: 0x4d240c\nFound: 0x4d2634\nFound: 0x4d2674\nFound: 0x4d2+ grep -qi 5023a8
+77c\nFound: 0x4dc021\nFound: 0x4e4ea0\nFound: 0x4e69a0\nFound: 0x4e6ca0\nFound: 0x4e79a0\nFound: 0x4e7ba0\nFound: 0x4e7da0\nFound: 0x4e94f4\nFound: 0x4eb7a0\nFound: 0x4ebfa0\nFound: 0x4ec0a0\nFound: 0x4ec5a0\nFound: 0x4ee7f4\nFound: 0x4ee9f4\nFound: 0x4ef2f4\nFound: 0x4efba0\nFound: 0x4efca0\nFound: 0x4efcf4\nFound: 0x4f02a0\nFound: 0x4f03a0\nFound: 0x4f0aa0\nFound: 0x4f10a0\nFound: 0x4f24a0\nFound: 0x4f32a0\nFound: 0x4f37a0\nFound: 0x5023a8\nFound: 0x7f0f16752ae5\nFound: 0x7f0f1679c21c\nFound: 0x7f0f167b1400\nFound: 0x7f0f167b3006\nFound: 0x7f0f167b4038\nFound: 0x7f0f167b41d0\nFound: 0x7f0f167b4290\nFound: 0x7f0f16823d54\nFound: 0x7f0f16823f22\nFound: 0x7f0f16835e59\nFound: 0x7f0f1683915f\nFound: 0x7f0f1683a77d\nFound: 0x7f0f1683a7af\nFound: 0x7f0f1687856d\nFound: 0x7f0f16878a37\nFound: 0x7f0f168b51b3\nFound: 0x7f0f168b9850\nFound: 0x7f0f168bc538\nFound: 0x7f0f168bcb98\nFound: 0x7f0f168bd978\nFound: 0x7f0f168beae8\nFound: 0x7f0f168c11e8\nFound: 0x7f0f168c27c0\nFound: 0x7f0f168c3900\nFound: 0x7f0f168c4398\nFound: 0x7f0f168c57d8\nFound: 0x7f0f168c6ee8\nFound: 0x7f0f168c77a0\nFound: 0x7f0f168c7e30\nFound: 0x7f0f168c8058\nFound: 0x7f0f168c9150\nFound: 0x7f0f168cadb8\nFound: 0x7f0f168cb8c8\nFound: 0x7f0f168e3670\nFound: 0x7f0f168e3dd0\nFound: 0x7f0f168e45a8\nFound: 0x7f0f168f0e7c\nFound: 0x7f0f168f0ed0\nFound: 0x7f0f168f0f08\nFound: 0x7f0f168f0f3c\nFound: 0x7f0f168f126a\nFound: 0x7f0f168f128e\nFound: 0x7f0f168f12b6\nFound: 0x7f0f168f12ca\nFound: 0x7f0f168f1316\nFound: 0x7f0f168f1342\nFound: 0x7f0f168f134e\nFound: 0x7f0f168fd2cc\nFound: 0x7f0f168fee1c\nFound: 0x7f0f168fee74\nFound: 0x7f0f168ff06c\nFound: 0x7f0f168ff4e4\nFound: 0x7f0f168ff514\nFound: 0x7f0f168ff56c\nFound: 0x7f0f168ff71c\nFound: 0x7f0f168ff7bc\nFound: 0x7f0f1690019c\nFound: 0x7f0f169001ec\nFound: 0x7f0f1690062c\nFound: 0x7f0f169009f4\nFound: 0x7f0f16900a84\nFound: 0x7f0f16900b1c\nFound: 0x7f0f16900bb4\nFound: 0x7f0f16900da4\nFound: 0x7f0f16900f2c\nFound: 0x7f0f16901084\nFound: 0x7f0f169010ec\nFound: 0x7f0f169013ac\nFound: 0x7f0f169014a4\nFound: 0x7f0f169014ec\nFound: 0x7f0f169015b4\nFound: 0x7f0f1690196c\nFound: 0x7f0f16901a8c\nFound: 0x7f0f16901e14\nFound: 0x7f0f16901fec\nFound: 0x7f0f16904534\nFound: 0x7f0f169045e4\nFound: 0x7f0f1690487c\nFound: 0x7f0f1690be41\nFound: 0x7f0f16915530\nFound: 0x7f0f16915630\nFound: 0x7f0f16915830\nFound: 0x7f0f16916530\nFound: 0x7f0f16916d30\nFound: 0x7f0f16916f30\nFound: 0x7f0f16917030\nFound: 0x7f0f16917330\nFound: 0x7f0f16917b30\nFound: 0x7f0f16918230\nFound: 0x7f0f16918830\nFound: 0x7f0f16918a30\nFound: 0x7f0f16918b30\nFound: 0x7f0f1691a930\nFound: 0x7f0f1691af30\nFound: 0x7f0f1691b130\nFound: 0x7f0f1691b230\nFound: 0x7f0f1691b830\nFound: 0x7f0f1691bb30\nFound: 0x7f0f1691c630\nFound: 0x7f0f1691cc30\nFound: 0x7f0f1691cf30\nFound: 0x7f0f1691d430\nFound: 0x7f0f1691d830\nFound: 0x7f0f1691da30\nFound: 0x7f0f1691eb30\nFound: 0x7f0f1691ef30\nFound: 0x7f0f1691f330\nFound: 0x7f0f16920530\nFound: 0x7f0f16920630\nFound: 0x7f0f16920c30\nFound: 0x7f0f16920d30\nFound: 0x7f0f16920f30\nFound: 0x7f0f16921730\nFound: 0x7f0f16922930\nFound: 0x7f0f16923730\nFound: 0x7f0f16923b30\nFound: 0x7f0f169a3e5c\nFound: 0x7f0f169aa14c\nFound: 0x7f0f169bc94c\nFound: 0x7f0f169bd34c\nFound: 0x7f0f169bd35c\nFound: 0x7f0f169c0fac\nFound: 0x7f0f169cd308\nFound: 0x7f0f169cdcc8\nFound: 0x7f0f169d0728\nFound: 0x7f0f169d13d0\nFound: 0x7f0f16a9207a\nFound: 0x7f0f16aa1354\nFound: 0x7f0f16aa13c1\nFound: 0x7f0f16aa383f\nFound: 0x7f0f16aa50d2\nFound: 0x7f0f16aa6ca3\nFound: 0x7f0f16aa78ae\nFound: 0x7f0f16ab03d8'
++ pass 'AOB scan with wildcard'
++ echo '  [PASS] AOB scan with wildcard'
+  [PASS] AOB scan with wildcard
++ PASSED=5
++ echo ''
+
++ echo '═══ SECTION 2: Read Value ═══'
+═══ SECTION 2: Read Value ═══
++ echo 'Running: read i32...'
+Running: read i32...
+++ ./build/HexScanCLI 225370 read 5023a8 i32
++ READ_VAL=123456
++ '[' 123456 == 123456 ']'
++ pass 'read i32 = 123456'
++ echo '  [PASS] read i32 = 123456'
+  [PASS] read i32 = 123456
++ PASSED=6
++ echo 'Running: read f64...'
+Running: read f64...
+++ ./build/HexScanCLI 225370 read 5023d0 f64
++ READ_F64=2.71828
++ echo 2.71828
++ grep -q 2.71828
++ pass 'read f64 ≈ 2.718281828'
++ echo '  [PASS] read f64 ≈ 2.718281828'
+  [PASS] read f64 ≈ 2.718281828
++ PASSED=7
++ echo ''
+
++ echo '═══ SECTION 3: Pointer Chain ═══'
+═══ SECTION 3: Pointer Chain ═══
++ echo 'Running: pchain g_world→health...'
+Running: pchain g_world→health...
+++ ./build/HexScanCLI 225370 pchain 502630 0 0 0 0x20
++ PCHAIN_RES=$'Base: 0x502630\nOffsets: 0x0 0x0 0x0 0x20\nTail: 0x11f7040\nValid: true\nValue(i32): 100'
++ echo $'Base: 0x502630\nOffsets: 0x0 0x0 0x0 0x20\nTail: 0x11f7040\nValid: true\nValue(i32): 100'
++ grep -q 'Valid: true'
++ pass 'pointer chain valid'
++ echo '  [PASS] pointer chain valid'
+  [PASS] pointer chain valid
++ PASSED=8
++ echo $'Base: 0x502630\nOffsets: 0x0 0x0 0x0 0x20\nTail: 0x11f7040\nValid: true\nValue(i32): 100'
++ grep -q 'Value(i32):'
+++ echo $'Base: 0x502630\nOffsets: 0x0 0x0 0x0 0x20\nTail: 0x11f7040\nValid: true\nValue(i32): 100'
+++ grep 'Value(i32):'
+++ awk '{print $2}'
++ PCHAIN_VAL=100
++ '[' 100 -gt 0 ']'
++ '[' 100 -le 100 ']'
++ pass 'pointer chain health value (100, expected ≤100)'
++ echo '  [PASS] pointer chain health value (100, expected ≤100)'
+  [PASS] pointer chain health value (100, expected ≤100)
++ PASSED=9
++ echo 'Running: pchain g_world→gold...'
+Running: pchain g_world→gold...
+++ ./build/HexScanCLI 225370 pchain 502630 0 0 0 0x58 0
++ PCHAIN_GOLD=$'Base: 0x502630\nOffsets: 0x0 0x0 0x0 0x58 0x0\nTail: 0x11f7090\nValid: true\nValue(i32): 1000'
++ echo $'Base: 0x502630\nOffsets: 0x0 0x0 0x0 0x58 0x0\nTail: 0x11f7090\nValid: true\nValue(i32): 1000'
++ grep -q 'Value(i32): 1000'
++ pass '4-level pointer chain to gold = 1000'
++ echo '  [PASS] 4-level pointer chain to gold = 1000'
+  [PASS] 4-level pointer chain to gold = 1000
++ PASSED=10
++ echo ''
+
++ echo '═══ SECTION 4: Region Detection ═══'
+═══ SECTION 4: Region Detection ═══
++ echo 'Running: regions BSS (g_i32)...'
+Running: regions BSS (g_i32)...
+++ ./build/HexScanCLI 225370 regions 5023a8
++ REG_BSS=$'Address: 0x5023a8\nRegion: 0x502000-0x503000\nPath: /home/jop/work/CheatTurbine/build/DummyTarget\nInode: 53184905\nPerms: rw-\nStatic: true'
++ echo $'Address: 0x5023a8\nRegion: 0x502000-0x503000\nPath: /home/jop/work/CheatTurbine/build/DummyTarget\nInode: 53184905\nPerms: rw-\nStatic: true'
++ grep -q 'Static: true'
++ pass 'g_i32 is in static region'
++ echo '  [PASS] g_i32 is in static region'
+  [PASS] g_i32 is in static region
++ PASSED=11
++ echo $'Address: 0x5023a8\nRegion: 0x502000-0x503000\nPath: /home/jop/work/CheatTurbine/build/DummyTarget\nInode: 53184905\nPerms: rw-\nStatic: true'
++ grep -q DummyTarget
++ pass 'g_i32 region path contains DummyTarget'
++ echo '  [PASS] g_i32 region path contains DummyTarget'
+  [PASS] g_i32 region path contains DummyTarget
++ PASSED=12
++ echo 'Running: regions heap (player)...'
+Running: regions heap (player)...
+++ ./build/HexScanCLI 225370 pchain 502630 0 0 0
+++ grep Tail:
+++ awk '{print $2}'
++ LIVE_PLAYER_TAIL=0x11f7280
++ '[' -n 0x11f7280 ']'
+++ ./build/HexScanCLI 225370 regions 11f7280
++ REG_HEAP=$'Address: 0x11f7280\nRegion: 0x11e5000-0x1218000\nPath: [heap]\nInode: 0\nPerms: rw-\nStatic: false'
++ echo $'Address: 0x11f7280\nRegion: 0x11e5000-0x1218000\nPath: [heap]\nInode: 0\nPerms: rw-\nStatic: false'
++ grep -q 'Static: false'
++ pass 'player entity is in dynamic/heap region'
++ echo '  [PASS] player entity is in dynamic/heap region'
+  [PASS] player entity is in dynamic/heap region
++ PASSED=13
++ echo ''
+
++ echo '═══ SECTION 5: Disassembler ═══'
+═══ SECTION 5: Disassembler ═══
++ echo 'Running: disasm applyDamage...'
+Running: disasm applyDamage...
+++ ./build/HexScanCLI 225370 disasm 404bc0 32
++ DISASM_RES=$'0x404bc0: push rbp\n0x404bc1: mov rbp, rsp\n0x404bc4: mov [rbp-0x08], rdi\n0x404bc8: mov [rbp-0x0C], esi\n0x404bcb: mov rax, [rbp-0x08]\n0x404bcf: cmp dword ptr [rax+0x20], 0x00\n0x404bd3: jle 0x0000000000404BFB\n0x404bd5: mov eax, [rbp-0x0C]\n0x404bd8: mov rcx, [rbp-0x08]\n0x404bdc: mov edx, [rcx+0x20]'
++ echo $'0x404bc0: push rbp\n0x404bc1: mov rbp, rsp\n0x404bc4: mov [rbp-0x08], rdi\n0x404bc8: mov [rbp-0x0C], esi\n0x404bcb: mov rax, [rbp-0x08]\n0x404bcf: cmp dword ptr [rax+0x20], 0x00\n0x404bd3: jle 0x0000000000404BFB\n0x404bd5: mov eax, [rbp-0x0C]\n0x404bd8: mov rcx, [rbp-0x08]\n0x404bdc: mov edx, [rcx+0x20]'
++ grep -q :
+++ echo $'0x404bc0: push rbp\n0x404bc1: mov rbp, rsp\n0x404bc4: mov [rbp-0x08], rdi\n0x404bc8: mov [rbp-0x0C], esi\n0x404bcb: mov rax, [rbp-0x08]\n0x404bcf: cmp dword ptr [rax+0x20], 0x00\n0x404bd3: jle 0x0000000000404BFB\n0x404bd5: mov eax, [rbp-0x0C]\n0x404bd8: mov rcx, [rbp-0x08]\n0x404bdc: mov edx, [rcx+0x20]'
+++ grep -c 0x
++ INSTR_COUNT=10
++ pass 'disassembled applyDamage (10 instructions)'
++ echo '  [PASS] disassembled applyDamage (10 instructions)'
+  [PASS] disassembled applyDamage (10 instructions)
++ PASSED=14
++ echo ''
+
++ echo '═══ SECTION 6: Patch & Restore ═══'
+═══ SECTION 6: Patch & Restore ═══
++ echo 'Running: NOP patch on applyDamage...'
+Running: NOP patch on applyDamage...
+++ python3 -c 'import os; f=open('\''/proc/225370/mem'\'', '\''rb'\''); f.seek(int('\''0x404bc0'\'', 16)); print(f.read(1).hex())'
++ ORIG_BYTE=55
++ ./build/HexScanCLI 225370 patch 404bc0 1
+++ python3 -c 'import os; f=open('\''/proc/225370/mem'\'', '\''rb'\''); f.seek(int('\''0x404bc0'\'', 16)); print(f.read(1).hex())'
++ PATCHED_BYTE=90
++ '[' 90 == 90 ']'
++ pass 'NOP patch applied (0x55 → 0x90)'
++ echo '  [PASS] NOP patch applied (0x55 → 0x90)'
+  [PASS] NOP patch applied (0x55 → 0x90)
++ PASSED=15
++ echo 'Running: restore verification (re-patch original byte)...'
+Running: restore verification (re-patch original byte)...
++ python3 -c $'\nimport os, struct\nfd = os.open(\'/proc/225370/mem\', os.O_WRONLY)\nos.lseek(fd, int(\'0x404bc0\', 16), os.SEEK_SET)\nos.write(fd, bytes([0x55]))\nos.close()\n'
+++ python3 -c 'import os; f=open('\''/proc/225370/mem'\'', '\''rb'\''); f.seek(int('\''0x404bc0'\'', 16)); print(f.read(1).hex())'
++ RESTORED_BYTE=55
++ '[' 55 == 55 ']'
++ pass 'byte restored to original (0x55)'
++ echo '  [PASS] byte restored to original (0x55)'
+  [PASS] byte restored to original (0x55)
++ PASSED=16
++ echo ''
+
++ echo '═══ SECTION 7: Freeze ═══'
+═══ SECTION 7: Freeze ═══
++ echo 'Running: freeze g_tickCount for 2s...'
+Running: freeze g_tickCount for 2s...
+++ ./build/HexScanCLI 225370 read 502640 i32
++ TICK_BEFORE=2
++ ./build/HexScanCLI 225370 freeze 502640 i32 2 2
++ sleep 2
+++ ./build/HexScanCLI 225370 read 502640 i32
++ TICK_AFTER=4
++ '[' 4 -gt 2 ']'
++ pass 'freeze: value resumed after unfreeze (before=2, after=4)'
++ echo '  [PASS] freeze: value resumed after unfreeze (before=2, after=4)'
+  [PASS] freeze: value resumed after unfreeze (before=2, after=4)
++ PASSED=17
++ echo ''
+
++ echo '═══ SECTION 8: Watch (HW Breakpoint) ═══'
+═══ SECTION 8: Watch (HW Breakpoint) ═══
++ timeout 2 ./build/HexScanCLI 225370 watch 502640 2 write
++ skip 'watchpoint test (ptrace permission denied or timeout)'
++ echo '  [SKIP] watchpoint test (ptrace permission denied or timeout)'
+  [SKIP] watchpoint test (ptrace permission denied or timeout)
++ SKIPPED=1
++ rm -f watch_result.txt
++ echo ''
+
++ echo '═══ SECTION 9: Interactive Mode (nextscan) ═══'
+═══ SECTION 9: Interactive Mode (nextscan) ═══
++ echo 'Running: interactive relative scans (Unknown -> Inc -> Dec -> Unchanged)...'
+Running: interactive relative scans (Unknown -> Inc -> Dec -> Unchanged)...
++ rm -f cli_pipe
++ mkfifo cli_pipe
++ CLI_PID=226038
++ exec
++ ./build/HexScanCLI 225370 interactive
++ echo 'scan i32 0 10'
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 0 -lt 1 ']'
++ sleep 0.1
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 0 -lt 1 ']'
++ sleep 0.1
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 0 -lt 1 ']'
++ sleep 0.1
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 1 -lt 1 ']'
++ echo 2
++ sleep 0.5
++ echo 'nextscan i32 0 4'
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 1 -lt 2 ']'
++ sleep 0.1
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 2 -lt 2 ']'
++ echo 3
++ sleep 0.5
++ echo 'nextscan i32 0 6'
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 2 -lt 3 ']'
++ sleep 0.1
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 3 -lt 3 ']'
++ echo 'nextscan i32 0 9'
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 3 -lt 4 ']'
++ sleep 0.1
+++ grep -c 'Scan finished' cli_out.txt
++ '[' 4 -lt 4 ']'
++ echo quit
++ wait 226038
++ grep -q 'Found: 0x5023a8' cli_out.txt
++ pass 'interactive nextscan sequence'
++ echo '  [PASS] interactive nextscan sequence'
+  [PASS] interactive nextscan sequence
++ PASSED=18
++ rm -f cli_pipe
++ exec
++ echo ''
+
++ echo 'Cleaning up...'
+Cleaning up...
++ exec
++ kill 225370
++ wait 225370
++ rm -f target_output.txt target_cmd_pipe
++ TOTAL=19
++ echo ''
+
++ echo ════════════════════════════════════════
+════════════════════════════════════════
++ echo '  Results: 18 passed, 0 failed, 1 skipped (total: 19)'
+  Results: 18 passed, 0 failed, 1 skipped (total: 19)
++ echo ════════════════════════════════════════
+════════════════════════════════════════
++ '[' 0 -eq 0 ']'
++ echo '   ALL INTEGRATION TESTS PASSED!        '
+   ALL INTEGRATION TESTS PASSED!        
++ echo ════════════════════════════════════════
+════════════════════════════════════════
++ exit 0

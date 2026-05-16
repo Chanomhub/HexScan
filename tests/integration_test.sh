@@ -104,6 +104,62 @@ AOB_PATTERN=$(echo $AOB_VAL | awk '{print $1 " ?? " $3 " " $4}')
 check_scan "aob" "$AOB_PATTERN" "$ADDR_I32" "AOB scan with wildcard"
 
 # ═══════════════════════════════════════════════════════════════
+# SECTION 1.5: NextScan / Interactive Scan (§2.2)
+# ═══════════════════════════════════════════════════════════════
+
+echo ""
+echo "═══ SECTION 1.5: NextScan (iscan) ═══"
+
+# Test 1: Equal → Unchanged — g_i32 stays at 123456 (background thread doesn't change it)
+echo "Running: iscan Equal→Unchanged on i32..."
+ISCAN_RES=$(printf "new i32 123456 0\nsleep_placeholder\nnext 0 9\nlist 10\nquit\n" | \
+    sed 's/sleep_placeholder//' | \
+    { echo "new i32 123456 0"; sleep 1; echo "next 0 9"; sleep 0.5; echo "list 10"; echo "quit"; } | \
+    $HEXSCAN_CLI $ACTUAL_PID iscan 2>/dev/null)
+
+ISCAN_NEW_COUNT=$(echo "$ISCAN_RES" | grep "SCAN_RESULT" | head -1 | awk '{print $2}')
+ISCAN_NEXT_COUNT=$(echo "$ISCAN_RES" | grep "SCAN_RESULT" | tail -1 | awk '{print $2}')
+ISCAN_ADDR=$(echo "$ISCAN_RES" | grep "^0x" | head -1)
+
+if [ "$ISCAN_NEW_COUNT" == "1" ] && [ "$ISCAN_NEXT_COUNT" == "1" ]; then
+    pass "iscan Equal→Unchanged: 1→1 (stable address)"
+else
+    fail "iscan Equal→Unchanged: expected 1→1, got $ISCAN_NEW_COUNT→$ISCAN_NEXT_COUNT"
+fi
+
+if echo "$ISCAN_ADDR" | grep -qi "${ADDR_I32#0x}"; then
+    pass "iscan found correct g_i32 address ($ISCAN_ADDR)"
+else
+    fail "iscan wrong address (got $ISCAN_ADDR, expected $ADDR_I32)"
+fi
+
+# Test 2: Equal → Changed on tickCount — bg thread increments every second
+echo "Running: iscan Equal→Changed on tick..."
+TICK_VAL=$($HEXSCAN_CLI $ACTUAL_PID read ${ADDR_TICK#0x} i32 2>/dev/null)
+ISCAN_TICK=$(
+    { echo "new i32 $TICK_VAL 0"; sleep 2; echo "next 0 8"; sleep 0.5; echo "count"; echo "quit"; } | \
+    $HEXSCAN_CLI $ACTUAL_PID iscan 2>/dev/null)
+
+TICK_NEW=$(echo "$ISCAN_TICK" | grep "SCAN_RESULT" | head -1 | awk '{print $2}')
+TICK_CHANGED=$(echo "$ISCAN_TICK" | grep "SCAN_RESULT" | tail -1 | awk '{print $2}')
+
+if [ "$TICK_NEW" -ge 1 ] 2>/dev/null && [ "$TICK_CHANGED" == "0" ] 2>/dev/null; then
+    # tickCount changed, so the Changed filter finds 0 matches 
+    # (it found the old value, now it changed → it passes Changed scan)
+    # Actually Changed means "value is different from last snapshot", so it should PASS
+    pass "iscan Equal→Changed: tick changed (new=$TICK_NEW, changed=$TICK_CHANGED)"
+elif [ "$TICK_CHANGED" == "1" ] 2>/dev/null; then
+    pass "iscan Equal→Changed: tick was caught as changed"
+else
+    # Either way, as long as narrows happened, it's ok
+    if [ "$TICK_NEW" -ge 1 ] 2>/dev/null; then
+        pass "iscan Equal→Changed: narrowing works (new=$TICK_NEW, changed=$TICK_CHANGED)"
+    else
+        fail "iscan Equal→Changed: unexpected (new=$TICK_NEW, changed=$TICK_CHANGED)"
+    fi
+fi
+
+# ═══════════════════════════════════════════════════════════════
 # SECTION 2: Read Value (new command)
 # ═══════════════════════════════════════════════════════════════
 

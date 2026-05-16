@@ -1,0 +1,266 @@
+Entering interactive mode. Type 'quit' to exit.
+Read cmd: scan
+[LOG] CLIScanner: Scanner reset
+[LOG] Parsing regions..
+[LOG] Matched region: 0x400000 - 0x4c3000 mode: a
+[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8
+[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8
+[LOG] Matched region: 0x502000 - 0x503000 mode: c
+[LOG] Matched region: 0x503000 - 0x506000 mode: c
+[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c
+[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c
+[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c
+[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a
+[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8
+[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8
+[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c
+[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c
+[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a
+[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8
+[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8
+[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c
+[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c
+[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8
+[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8
+[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a
+[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a
+[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8
+[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8
+[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c
+[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c
+[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c
+[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2
+[LOG] Parsed 28 regions, 28 match
+[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000
+[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000
+[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000
+[LOG] CLIScanner: Scanning region 0x502000 - 0x503000
+[LOG] CLIScanner: Scanning region 0x503000 - 0x506000
+[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000
+[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000
+[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000
+[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000
+[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000
+[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000
+[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000
+[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000
+[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000
+[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000
+[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000
+[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000
+[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000
+[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000
+[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000
+[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000
+[LOG] CLIScanner: Scan completed, 1225728 addresses scanned, 1225728 match
+Scan finished. Found 1225728 addresses.
+Found: 0x400000
+Found: 0x400004
+Found: 0x400008
+Found: 0x40000c
+Found: 0x400010
+Found: 0x400014
+Found: 0x400018
+Found: 0x40001c
+Found: 0x400020
+Found: 0x400024
+... and 1225718 more
+Read cmd: nextscan
+[LOG] Parsing regions..
+[LOG] Matched region: 0x400000 - 0x4c3000 mode: a
+[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8
+[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8
+[LOG] Matched region: 0x502000 - 0x503000 mode: c
+[LOG] Matched region: 0x503000 - 0x506000 mode: c
+[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c
+[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c
+[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c
+[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a
+[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8
+[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8
+[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c
+[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c
+[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a
+[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8
+[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8
+[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c
+[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c
+[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8
+[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8
+[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a
+[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a
+[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8
+[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8
+[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c
+[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c
+[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c
+[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2
+[LOG] Parsed 28 regions, 28 match
+[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000
+[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000
+[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000
+[LOG] CLIScanner: Scanning region 0x502000 - 0x503000
+[LOG] CLIScanner: Scanning region 0x503000 - 0x506000
+[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000
+[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000
+[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000
+[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000
+[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000
+[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000
+[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000
+[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000
+[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000
+[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000
+[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000
+[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000
+[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000
+[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000
+[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000
+[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000
+[LOG] CLIScanner: Scan completed, 1225728 addresses scanned, 114 match
+Scan finished. Found 114 addresses.
+Found: 0x502160
+Found: 0x502164
+Found: 0x5023a4
+Found: 0x5023a8
+Found: 0x5023b0
+Found: 0x5023c8
+Found: 0x5023d0
+Found: 0x5023d4
+Found: 0x502e28
+Found: 0x11f7450
+... and 104 more
+Read cmd: nextscan
+[LOG] Parsing regions..
+[LOG] Matched region: 0x400000 - 0x4c3000 mode: a
+[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8
+[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8
+[LOG] Matched region: 0x502000 - 0x503000 mode: c
+[LOG] Matched region: 0x503000 - 0x506000 mode: c
+[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c
+[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c
+[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c
+[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a
+[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8
+[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8
+[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c
+[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c
+[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a
+[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8
+[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8
+[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c
+[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c
+[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8
+[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8
+[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a
+[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a
+[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8
+[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8
+[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c
+[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c
+[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c
+[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2
+[LOG] Parsed 28 regions, 28 match
+[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000
+[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000
+[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000
+[LOG] CLIScanner: Scanning region 0x502000 - 0x503000
+[LOG] CLIScanner: Scanning region 0x503000 - 0x506000
+[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000
+[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000
+[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000
+[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000
+[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000
+[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000
+[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000
+[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000
+[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000
+[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000
+[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000
+[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000
+[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000
+[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000
+[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000
+[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000
+[LOG] CLIScanner: Scan completed, 114 addresses scanned, 7 match
+Scan finished. Found 7 addresses.
+Found: 0x5023a4
+Found: 0x5023a8
+Found: 0x5023b0
+Found: 0x5023c8
+Found: 0x5023d4
+Found: 0x7ffc17d2c92c
+Found: 0x7ffc17d2c930
+Read cmd: nextscan
+[LOG] Parsing regions..
+[LOG] Matched region: 0x400000 - 0x4c3000 mode: a
+[LOG] Matched region: 0x4c3000 - 0x4fb000 mode: 8
+[LOG] Matched region: 0x4fb000 - 0x502000 mode: 8
+[LOG] Matched region: 0x502000 - 0x503000 mode: c
+[LOG] Matched region: 0x503000 - 0x506000 mode: c
+[LOG] Matched region: 0x11e5000 - 0x1218000 mode: c
+[LOG] Matched region: 0x7f0f15f38000 - 0x7f0f16739000 mode: c
+[LOG] Matched region: 0x7f0f16739000 - 0x7f0f1673c000 mode: c
+[LOG] Matched region: 0x7f0f1673c000 - 0x7f0f168b0000 mode: a
+[LOG] Matched region: 0x7f0f168b0000 - 0x7f0f16929000 mode: 8
+[LOG] Matched region: 0x7f0f16929000 - 0x7f0f1692d000 mode: 8
+[LOG] Matched region: 0x7f0f1692d000 - 0x7f0f1692f000 mode: c
+[LOG] Matched region: 0x7f0f1692f000 - 0x7f0f16937000 mode: c
+[LOG] Matched region: 0x7f0f16937000 - 0x7f0f169c6000 mode: a
+[LOG] Matched region: 0x7f0f169c6000 - 0x7f0f16a4c000 mode: 8
+[LOG] Matched region: 0x7f0f16a4c000 - 0x7f0f16a4d000 mode: 8
+[LOG] Matched region: 0x7f0f16a4d000 - 0x7f0f16a4e000 mode: c
+[LOG] Matched region: 0x7f0f16a4e000 - 0x7f0f16a50000 mode: c
+[LOG] Matched region: 0x7f0f16a7e000 - 0x7f0f16a82000 mode: 8
+[LOG] Matched region: 0x7f0f16a82000 - 0x7f0f16a84000 mode: 8
+[LOG] Matched region: 0x7f0f16a84000 - 0x7f0f16a86000 mode: a
+[LOG] Matched region: 0x7f0f16a86000 - 0x7f0f16ab0000 mode: a
+[LOG] Matched region: 0x7f0f16ab0000 - 0x7f0f16abc000 mode: 8
+[LOG] Matched region: 0x7f0f16abc000 - 0x7f0f16abe000 mode: 8
+[LOG] Matched region: 0x7f0f16abe000 - 0x7f0f16abf000 mode: c
+[LOG] Matched region: 0x7f0f16abf000 - 0x7f0f16ac0000 mode: c
+[LOG] Matched region: 0x7ffc17d0d000 - 0x7ffc17d2e000 mode: c
+[LOG] Matched region: 0xffffffffff600000 - 0xffffffffff601000 mode: 2
+[LOG] Parsed 28 regions, 28 match
+[LOG] CLIScanner: Scanning region 0x400000 - 0x4c3000
+[LOG] CLIScanner: Scanning region 0x4c3000 - 0x4fb000
+[LOG] CLIScanner: Scanning region 0x4fb000 - 0x502000
+[LOG] CLIScanner: Scanning region 0x502000 - 0x503000
+[LOG] CLIScanner: Scanning region 0x503000 - 0x506000
+[LOG] CLIScanner: Scanning region 0x11e5000 - 0x1218000
+[LOG] CLIScanner: Scanning region 0x7f0f16739000 - 0x7f0f1673c000
+[LOG] CLIScanner: Scanning region 0x7f0f1673c000 - 0x7f0f168b0000
+[LOG] CLIScanner: Scanning region 0x7f0f168b0000 - 0x7f0f16929000
+[LOG] CLIScanner: Scanning region 0x7f0f16929000 - 0x7f0f1692d000
+[LOG] CLIScanner: Scanning region 0x7f0f1692d000 - 0x7f0f1692f000
+[LOG] CLIScanner: Scanning region 0x7f0f1692f000 - 0x7f0f16937000
+[LOG] CLIScanner: Scanning region 0x7f0f16937000 - 0x7f0f169c6000
+[LOG] CLIScanner: Scanning region 0x7f0f169c6000 - 0x7f0f16a4c000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4c000 - 0x7f0f16a4d000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4d000 - 0x7f0f16a4e000
+[LOG] CLIScanner: Scanning region 0x7f0f16a4e000 - 0x7f0f16a50000
+[LOG] CLIScanner: Scanning region 0x7f0f16a84000 - 0x7f0f16a86000
+[LOG] CLIScanner: Scanning region 0x7f0f16a86000 - 0x7f0f16ab0000
+[LOG] CLIScanner: Scanning region 0x7f0f16ab0000 - 0x7f0f16abc000
+[LOG] CLIScanner: Scanning region 0x7f0f16abc000 - 0x7f0f16abe000
+[LOG] CLIScanner: Scanning region 0x7f0f16abe000 - 0x7f0f16abf000
+[LOG] CLIScanner: Scanning region 0x7f0f16abf000 - 0x7f0f16ac0000
+[LOG] CLIScanner: Scanning region 0x7ffc17d0d000 - 0x7ffc17d2e000
+[LOG] CLIScanner: Scan completed, 7 addresses scanned, 7 match
+Scan finished. Found 7 addresses.
+Found: 0x5023a4
+Found: 0x5023a8
+Found: 0x5023b0
+Found: 0x5023c8
+Found: 0x5023d4
+Found: 0x7ffc17d2c92c
+Found: 0x7ffc17d2c930
