@@ -40,7 +40,17 @@ ADDR_GOLD=$(grep "^gold " target_output.txt | head -1 | awk '{print $2}')
 ADDR_PLAYER=$(grep "^player " target_output.txt | head -1 | awk '{print $3}')
 FUNC_APPLYDMG=$(grep "^applyDamage " target_output.txt | head -1 | awk '{print $2}')
 FUNC_HEAL=$(grep "^healPlayer " target_output.txt | head -1 | awk '{print $2}')
+FUNC_PURCHASE=$(grep "^purchaseItem " target_output.txt | head -1 | awk '{print $2}')
+FUNC_CALCDMG=$(grep "^calculateDmg " target_output.txt | head -1 | awk '{print $2}')
+FUNC_TICK=$(grep "^tickGameLoop " target_output.txt | head -1 | awk '{print $2}')
 ADDR_STACK_I32=$(grep "^stack_i32 " target_output.txt | head -1 | awk '{print $2}')
+
+ADDR_I8=$(grep "^i8 " target_output.txt | head -1 | awk '{print $2}')
+ADDR_I16=$(grep "^i16 " target_output.txt | head -1 | awk '{print $2}')
+ADDR_U8=$(grep "^u8 " target_output.txt | head -1 | awk '{print $2}')
+ADDR_U16=$(grep "^u16 " target_output.txt | head -1 | awk '{print $2}')
+ADDR_U32=$(grep "^u32 " target_output.txt | head -1 | awk '{print $2}')
+ADDR_U64=$(grep "^u64 " target_output.txt | head -1 | awk '{print $2}')
 
 echo "Ground Truth from DummyTarget:"
 echo "  i32:    $ADDR_I32"
@@ -90,7 +100,15 @@ check_scan() {
 }
 
 # §2.1 Exact Value Scans
+check_scan "i8" "-42" "$ADDR_I8" "i8 exact scan"
+check_scan "i16" "-1234" "$ADDR_I16" "i16 exact scan"
 check_scan "i32" "123456" "$ADDR_I32" "i32 exact scan"
+check_scan "i64" "9876543210" "$ADDR_I64" "i64 exact scan"
+check_scan "u8" "200" "$ADDR_U8" "u8 exact scan"
+check_scan "u16" "50000" "$ADDR_U16" "u16 exact scan"
+check_scan "u32" "3000000000" "$ADDR_U32" "u32 exact scan"
+check_scan "u64" "16045690984833333902" "$ADDR_U64" "u64 exact scan"
+check_scan "f32" "3.14159" "$ADDR_F32" "f32 exact scan"
 check_scan "f64" "2.718281828" "$ADDR_F64" "f64 exact scan"
 check_scan "string" "HexScan" "$ADDR_STR" "string scan"
 
